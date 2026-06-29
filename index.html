@@ -1011,22 +1011,38 @@ label{color:var(--ink)}
     <h2 id="modal-title">Add Person</h2>
     <label>Full name</label>
     <input type="text" id="m-name" placeholder="e.g. Jane Doe">
+    <label>Email</label>
+    <input type="email" id="m-email" placeholder="e.g. jsmith@bigvikinggames.com">
     <label>Job title</label>
     <input type="text" id="m-title" placeholder="e.g. Senior Software Developer">
-    <label>Department</label>
-    <select id="m-dept"></select>
-    <label>Employment type</label>
-    <select id="m-type">
-      <option value="full-time">Full-time</option>
-      <option value="contractor">Contractor</option>
-      <option value="intern">Intern</option>
-    </select>
-    <label>Reports to (manager)</label>
-    <select id="m-mgr"></select>
+    <div class="frow">
+      <div><label>Department</label><select id="m-dept"></select></div>
+      <div><label>Employment type</label><select id="m-type"><option value="full-time">Full-time</option><option value="contractor">Contractor</option><option value="intern">Intern</option></select></div>
+    </div>
+    <div class="frow">
+      <div><label>Reports to (manager)</label><select id="m-mgr"></select></div>
+      <div><label>Also reports to (dotted line)</label><select id="m-dotted" multiple style="min-height:60px"></select></div>
+    </div>
+    <div class="frow">
+      <div><label>Start date</label><input type="date" id="m-startdate"></div>
+      <div><label>Location</label><input type="text" id="m-location" placeholder="e.g. Toronto, ON (Hybrid)"></div>
+    </div>
+    <div class="frow" id="m-comp-row" style="display:none">
+      <div><label>Compensation (annual)</label><input type="text" id="m-comp" placeholder="e.g. 150000"></div>
+      <div></div>
+    </div>
+    <div class="frow">
+      <div><label>Phone</label><input type="text" id="m-phone" placeholder="e.g. +1 416-555-0123"></div>
+      <div><label>Slack handle</label><input type="text" id="m-slack" placeholder="e.g. @jsmith"></div>
+    </div>
     <label>Photo URL (optional)</label>
     <input type="text" id="m-photo" placeholder="https://…  (blank = colored initials)">
     <label>LinkedIn URL (optional)</label>
     <input type="text" id="m-linkedin" placeholder="https://www.linkedin.com/in/…">
+    <label>Notes (internal)</label>
+    <input type="text" id="m-notes" placeholder="e.g. Acting CTO, on parental leave until Sept">
+    <div id="m-raci-summary" class="muted" style="display:none;margin-top:10px;border-top:1px solid #eef0f4;padding-top:8px"></div>
+    <div id="m-bf-summary" class="muted" style="display:none;margin-top:6px;border-top:1px solid #eef0f4;padding-top:8px"></div>
     <div id="m-custom-fields"></div>
     <div class="modal-actions">
       <button class="btn btn-del" id="m-del" onclick="deletePerson()" style="display:none;margin-right:auto;background:#ef4444;color:#fff">Remove</button>
@@ -1636,8 +1652,31 @@ function buildCard(n){
   inner += '<a class="clinkedin" href="'+li+'" target="_blank" rel="noopener noreferrer" title="Open '+escAttr(n.name)+' on LinkedIn">in</a>';
   inner += '<div class="chead"><div class="cavatar" style="background:'+n.color+'">'+av+'</div><div class="chead-txt"><div class="cname">'+n.name+'</div><div class="ctitle">'+n.position+'</div></div></div>';
   inner += '<div class="cdept" style="color:'+n.color+'">'+n.dept+'</div>';
+  { const emp=EMPLOYEES.find(e=>e.email===n.email);
+    if(emp&&emp.location) inner += '<div class="ctenure" title="Location">&#128205; '+emp.location+'</div>';
+  }
   { const _t=tenureStr(n); if(_t) inner += '<div class="ctenure" title="Started '+hireOf(n)+'">&#9201; '+_t+' at BVG</div>'; }
-  if(COMP_OK && COMP_DATA[n.email]) inner += '<div class="ccomp">$'+Number(COMP_DATA[n.email]).toLocaleString()+'/yr</div>';
+  { const emp=EMPLOYEES.find(e=>e.email===n.email);
+    const compVal=emp&&emp.comp?emp.comp:COMP_DATA[n.email];
+    if(COMP_OK && compVal) inner += '<div class="ccomp">$'+Number(compVal).toLocaleString()+'/yr</div>';
+  }
+  { const emp=EMPLOYEES.find(e=>e.email===n.email);
+    if(emp&&emp.notes) inner += '<div class="ctenure" style="color:#6366f1" title="Note">&#128221; '+emp.notes+'</div>';
+  }
+  { // RACI badge
+    const domains=RACI_LOADED&&RACI_DOMAINS.length?RACI_DOMAINS:RACI_SEED_DOMAINS;
+    const processes=RACI_LOADED&&RACI_PROCESSES.length?RACI_PROCESSES:RACI_SEED_PROCESSES;
+    let ra=0,rc=0; [...domains,...processes].forEach(item=>{
+      if(item.a===n.email) ra++;
+      if(Array.isArray(item.r)&&item.r.includes(n.email)) rc++;
+    });
+    if(ra||rc) inner += '<div class="ctenure" style="color:#0369a1" title="RACI: Accountable for '+ra+', Responsible for '+rc+'">&#9744; A:'+ra+' R:'+rc+'</div>';
+  }
+  { // Bus factor badge
+    const bfList=BF_LOADED&&BF_ENTRIES.length?BF_ENTRIES:BF_SEED;
+    const bf=bfList.find(b=>b.email===n.email);
+    if(bf) inner += '<div class="ctenure" style="color:'+(bf.risk==='critical'?'#dc2626':bf.risk==='high'?'#ea580c':'#ca8a04')+'" title="Bus factor: '+bf.sole+'">&#9888; BF: '+bf.risk.toUpperCase()+'</div>';
+  }
   if(externalMgr){
     inner += '<div class="cmgr-ext">&#8593; '+externalMgr+'<br><span style="font-size:9px;opacity:.7">('+externalMgrDept+')</span></div>';
   }
@@ -1814,11 +1853,16 @@ function zoomFit(){
 const tip=document.getElementById('tip');
 function showTip(e,n){
   const types={'FT':'Full-time','C':'Contractor','INT':'Intern'};
+  const emp=EMPLOYEES.find(x=>x.email===n.email);
   const mgr=n.parent?tree[n.parent]?.name:'No manager';
   const sec=secondaryLinks.filter(l=>l.from===n.email).map(l=>tree[l.to]?.name).filter(Boolean);
   const secHtml=sec.length?'<br><span style="opacity:.55;font-size:10px;color:#c9a6ff">Also reports to: '+sec.join(', ')+'</span>':'';
   const tenHtml=tenureStr(n)?'<br><span style="opacity:.55;font-size:10px;color:#9fd3c7">&#9201; '+tenureStr(n)+' at BVG (since '+hireOf(n)+')</span>':'';
-  tip.innerHTML='<strong>'+n.name+'</strong>'+n.position+'<br><span style="opacity:.7">'+n.dept+' &bull; '+(types[n.badgeLabel]||n.badgeLabel)+'</span><br><span style="opacity:.5;font-size:11px">'+n.email+'</span><br><span style="opacity:.45;font-size:10px">Reports to: '+mgr+'</span>'+tenHtml+secHtml;
+  const locHtml=emp&&emp.location?'<br><span style="opacity:.55;font-size:10px;color:#10b981">&#128205; '+emp.location+'</span>':'';
+  const phoneHtml=emp&&emp.phone?'<br><span style="opacity:.5;font-size:10px">&#128222; '+emp.phone+'</span>':'';
+  const slackHtml=emp&&emp.slackHandle?'<br><span style="opacity:.5;font-size:10px">Slack: '+emp.slackHandle+'</span>':'';
+  const notesHtml=emp&&emp.notes?'<br><span style="opacity:.55;font-size:10px;color:#818cf8">&#128221; '+emp.notes+'</span>':'';
+  tip.innerHTML='<strong>'+n.name+'</strong>'+n.position+'<br><span style="opacity:.7">'+n.dept+' &bull; '+(types[n.badgeLabel]||n.badgeLabel)+'</span><br><span style="opacity:.5;font-size:11px">'+n.email+'</span><br><span style="opacity:.45;font-size:10px">Reports to: '+mgr+'</span>'+tenHtml+locHtml+secHtml+phoneHtml+slackHtml+notesHtml;
   tip.classList.add('on'); moveTip(e);
 }
 function moveTip(e){ tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px'; }
@@ -1883,16 +1927,29 @@ function openAddModal(){
   document.getElementById('m-del').style.display='none';
   document.getElementById('m-go').textContent='Add Person';
   document.getElementById('m-name').value='';
+  document.getElementById('m-email').value='';
   document.getElementById('m-title').value='';
   document.getElementById('m-photo').value='';
   document.getElementById('m-linkedin').value='';
+  document.getElementById('m-startdate').value='';
+  document.getElementById('m-location').value='';
+  document.getElementById('m-comp').value='';
+  document.getElementById('m-phone').value='';
+  document.getElementById('m-slack').value='';
+  document.getElementById('m-notes').value='';
+  document.getElementById('m-comp-row').style.display=COMP_OK?'':'none';
   const dsel=document.getElementById('m-dept');
   dsel.innerHTML=deptList().map(d=>'<option value="'+d.replace(/"/g,'&quot;')+'">'+d.trim()+'</option>').join('')+'<option value="__new__">+ New department…</option>';
   document.getElementById('m-type').value='full-time';
+  const sorted=EMPLOYEES.slice().sort((a,b)=>a.name.localeCompare(b.name));
   const msel=document.getElementById('m-mgr');
-  const opts=EMPLOYEES.slice().sort((a,b)=>a.name.localeCompare(b.name))
-    .map(e=>'<option value="'+e.email+'">'+e.name+' — '+e.position+'</option>').join('');
+  const opts=sorted.map(e=>'<option value="'+e.email+'">'+e.name+' — '+e.position+'</option>').join('');
   msel.innerHTML='<option value="">(No manager — top level)</option>'+opts;
+  const dottedSel=document.getElementById('m-dotted');
+  dottedSel.innerHTML=sorted.map(e=>'<option value="'+e.email+'">'+e.name+'</option>').join('');
+  dottedSel.selectedIndex=-1;
+  document.getElementById('m-raci-summary').style.display='none';
+  document.getElementById('m-bf-summary').style.display='none';
   renderModalCustomFields('m-custom-fields','people',{});
   document.getElementById('modalbg').classList.add('on');
   setTimeout(()=>document.getElementById('m-name').focus(),30);
@@ -1901,27 +1958,63 @@ function closeModal(){ document.getElementById('modalbg').classList.remove('on')
 function openEditModal(email){
   if(!IS_EDITOR)return;
   const n=tree[email]; if(!n)return;
+  const emp=EMPLOYEES.find(e=>e.email===email);
   editEmail=email;
   document.getElementById('modal-title').textContent='Edit Person';
   document.getElementById('m-name').value=n.name;
+  document.getElementById('m-email').value=email;
   document.getElementById('m-title').value=n.position;
   const dsel=document.getElementById('m-dept');
   dsel.innerHTML=deptList().map(d=>'<option value="'+d.replace(/"/g,'&quot;')+'">'+d.trim()+'</option>').join('')+'<option value="__new__">+ New department…</option>';
   dsel.value=n.dept;
   document.getElementById('m-type').value=n.type;
+  const sorted=EMPLOYEES.filter(e=>e.email!==email).slice().sort((a,b)=>a.name.localeCompare(b.name));
   const msel=document.getElementById('m-mgr');
-  const opts=EMPLOYEES.filter(e=>e.email!==email).slice().sort((a,b)=>a.name.localeCompare(b.name))
-    .map(e=>'<option value="'+e.email+'">'+e.name+' — '+e.position+'</option>').join('');
+  const opts=sorted.map(e=>'<option value="'+e.email+'">'+e.name+' — '+e.position+'</option>').join('');
   msel.innerHTML='<option value="">(No manager — top level)</option>'+opts;
   msel.value=n.parent||'';
+  // Dotted-line (secondary) reporting
+  const dottedSel=document.getElementById('m-dotted');
+  dottedSel.innerHTML=sorted.map(e=>'<option value="'+e.email+'">'+e.name+'</option>').join('');
+  const curDotted=secondaryLinks.filter(l=>l.from===email).map(l=>l.to);
+  Array.from(dottedSel.options).forEach(o=>{ o.selected=curDotted.includes(o.value); });
+  // Core fields
   document.getElementById('m-photo').value=n.photo||'';
   document.getElementById('m-linkedin').value=n.linkedin||'';
+  document.getElementById('m-startdate').value=(emp&&emp.startDate)||HIRE[email]||'';
+  document.getElementById('m-location').value=(emp&&emp.location)||'';
+  document.getElementById('m-comp-row').style.display=COMP_OK?'':'none';
+  document.getElementById('m-comp').value=(emp&&emp.comp)?emp.comp:(COMP_DATA[email]||'');
+  document.getElementById('m-phone').value=(emp&&emp.phone)||'';
+  document.getElementById('m-slack').value=(emp&&emp.slackHandle)||'';
+  document.getElementById('m-notes').value=(emp&&emp.notes)||'';
   document.getElementById('m-name').dataset.email=email;
   document.getElementById('m-del').style.display='';
-  // Show offboard button only for admins/sysadmins and only for real employees (not placeholders)
   var offBtn=document.getElementById('m-offboard');
   if(offBtn) offBtn.style.display=(IS_ADMIN||IS_SYSADMIN)&&!email.includes('added.local')&&!email.includes('tbd@')?'':'none';
   document.getElementById('m-go').textContent='Save Changes';
+  // RACI cross-reference (read-only)
+  const raciEl=document.getElementById('m-raci-summary');
+  const domains=RACI_LOADED&&RACI_DOMAINS.length?RACI_DOMAINS:RACI_SEED_DOMAINS;
+  const processes=RACI_LOADED&&RACI_PROCESSES.length?RACI_PROCESSES:RACI_SEED_PROCESSES;
+  const raciItems=[...domains,...processes];
+  const raciRoles=[];
+  raciItems.forEach(item=>{
+    const roles=[];
+    if(item.a===email) roles.push('A');
+    if(Array.isArray(item.r)&&item.r.includes(email)) roles.push('R');
+    if(Array.isArray(item.c)&&item.c.includes(email)) roles.push('C');
+    if(Array.isArray(item.i)&&item.i.includes(email)) roles.push('I');
+    if(roles.length) raciRoles.push('<b>'+roles.join(',')+'</b> — '+item.name);
+  });
+  if(raciRoles.length){ raciEl.innerHTML='<strong>RACI involvement:</strong><br>'+raciRoles.join('<br>'); raciEl.style.display=''; }
+  else { raciEl.style.display='none'; }
+  // Bus factor cross-reference (read-only)
+  const bfEl=document.getElementById('m-bf-summary');
+  const bfList=BF_LOADED&&BF_ENTRIES.length?BF_ENTRIES:BF_SEED;
+  const bfEntry=bfList.find(b=>b.email===email);
+  if(bfEntry){ bfEl.innerHTML='<strong>Bus factor:</strong> <span style="color:'+(bfEntry.risk==='critical'?'#dc2626':bfEntry.risk==='high'?'#ea580c':'#ca8a04')+'">'+bfEntry.risk.toUpperCase()+' risk</span> — '+bfEntry.sole; bfEl.style.display=''; }
+  else { bfEl.style.display='none'; }
   renderModalCustomFields('m-custom-fields','people',n.customFields||{});
   document.getElementById('modalbg').classList.add('on');
   setTimeout(()=>document.getElementById('m-name').focus(),30);
@@ -1940,12 +2033,21 @@ function deletePerson(){
 }
 function submitAdd(){
   const name=document.getElementById('m-name').value.trim();
+  const emailField=document.getElementById('m-email').value.trim().toLowerCase();
   const title=document.getElementById('m-title').value.trim();
   let dept=document.getElementById('m-dept').value;
   const type=document.getElementById('m-type').value;
   const mgr=document.getElementById('m-mgr').value||null;
   const photo=document.getElementById('m-photo').value.trim();
   const linkedin=document.getElementById('m-linkedin').value.trim();
+  const startDate=document.getElementById('m-startdate').value;
+  const location=document.getElementById('m-location').value.trim();
+  const comp=document.getElementById('m-comp').value.trim().replace(/[^0-9.]/g,'')||'';
+  const phone=document.getElementById('m-phone').value.trim();
+  const slackHandle=document.getElementById('m-slack').value.trim();
+  const notes=document.getElementById('m-notes').value.trim();
+  const dottedSel=document.getElementById('m-dotted');
+  const newDotted=Array.from(dottedSel.selectedOptions).map(o=>o.value);
   if(!name){ alert('Please enter a name.'); return; }
   if(dept==='__new__'){
     dept=prompt('New department name:'); if(!dept){ return; } dept=dept.trim();
@@ -1956,25 +2058,55 @@ function submitAdd(){
   if(editEmail){
     const emp=EMPLOYEES.find(e=>e.email===editEmail);
     if(!emp){ closeModal(); return; }
+    const targetEmail=emailField||editEmail;
     if(mgr && (mgr===editEmail || isAncestor(editEmail,mgr))){ alert('That manager would create a reporting loop.'); return; }
+    // Handle email change
+    if(emailField && emailField!==editEmail){
+      if(EMPLOYEES.some(e=>e.email!==editEmail&&(e.email===emailField||e.id===emailField))){ alert('That email is already in use.'); return; }
+      EMPLOYEES.forEach(e=>{ if(e.reports_to===editEmail) e.reports_to=emailField; });
+      secondaryLinks.forEach(l=>{ if(l.from===editEmail) l.from=emailField; if(l.to===editEmail) l.to=emailField; });
+      emp.id=emailField; emp.email=emailField;
+      if(HIRE[editEmail]){ HIRE[emailField]=HIRE[editEmail]; delete HIRE[editEmail]; }
+    }
     emp.name=name; emp.position=title||'—'; emp.dept=dept; emp.type=type;
     emp.color=deptColor(dept); emp.reports_to=mgr;
     emp.photo=photo||undefined; emp.linkedin=linkedin||undefined;
+    emp.startDate=startDate||undefined; emp.location=location||undefined;
+    emp.comp=comp?parseFloat(comp):undefined; emp.phone=phone||undefined;
+    emp.slackHandle=slackHandle||undefined; emp.notes=notes||undefined;
     emp.badgeLabel=badge.badgeLabel; emp.badgeFg=badge.badgeFg; emp.badgeBg=badge.badgeBg;
     emp.customFields=collectModalCustomFields('m-custom-fields','people');
+    // Update HIRE map for tenure display
+    const finalEmail=emp.email;
+    if(startDate) HIRE[finalEmail]=startDate;
+    // Update comp override
+    if(COMP_OK && comp) COMP_DATA[finalEmail]=parseFloat(comp);
+    else if(COMP_OK && !comp) delete COMP_DATA[finalEmail];
+    // Update dotted lines
+    secondaryLinks=secondaryLinks.filter(l=>l.from!==finalEmail);
+    newDotted.filter(to=>to!==finalEmail&&to!==mgr).forEach(to=>secondaryLinks.push({from:finalEmail,to}));
     buildDeptPills(); initTree();
     if(mgr){ let cur=mgr; while(cur){ collapsed.delete(cur); cur=tree[cur]?.parent; } }
     saveState(); render(); showToast(name+' updated');
     closeModal(); return;
   }
-  // unique id
-  let base=name.toLowerCase().replace(/[^a-z0-9]+/g,'.').replace(/^\.|\.$/g,'')||'person';
-  let id=base+'@added.local', n=2;
-  while(EMPLOYEES.some(e=>e.id===id||e.email===id)){ id=base+n+'@added.local'; n++; }
+  // New employee — determine ID
+  let id=emailField;
+  if(!id){
+    let base=name.toLowerCase().replace(/[^a-z0-9]+/g,'.').replace(/^\.|\.$/g,'')||'person';
+    id=base+'@added.local'; let n=2;
+    while(EMPLOYEES.some(e=>e.id===id||e.email===id)){ id=base+n+'@added.local'; n++; }
+  } else if(EMPLOYEES.some(e=>e.id===id||e.email===id)){ alert('An employee with that email already exists.'); return; }
   var cfData=collectModalCustomFields('m-custom-fields','people');
-  EMPLOYEES.push({id,name,position:title||'—',dept,email:id,reports_to:mgr,type,color:deptColor(dept),photo:photo||undefined,linkedin:linkedin||undefined,...badge,customFields:cfData});
+  EMPLOYEES.push({id,name,position:title||'—',dept,email:id,reports_to:mgr,type,color:deptColor(dept),
+    photo:photo||undefined,linkedin:linkedin||undefined,startDate:startDate||undefined,
+    location:location||undefined,comp:comp?parseFloat(comp):undefined,phone:phone||undefined,
+    slackHandle:slackHandle||undefined,notes:notes||undefined,...badge,customFields:cfData});
+  if(startDate) HIRE[id]=startDate;
+  if(COMP_OK && comp) COMP_DATA[id]=parseFloat(comp);
+  // Dotted lines for new employee
+  newDotted.filter(to=>to!==id&&to!==mgr).forEach(to=>secondaryLinks.push({from:id,to}));
   buildDeptPills(); initTree();
-  // keep manager's branch expanded so the new person is visible
   if(mgr){ let cur=mgr; while(cur){ collapsed.delete(cur); cur=tree[cur]?.parent; } }
   saveState(); render(); showToast(name+' added'+(mgr&&tree[mgr]?' under '+tree[mgr].name:''));
   closeModal();
