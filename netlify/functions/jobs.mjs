@@ -57,14 +57,14 @@ export default async (req, context) => {
     const auth = await verifyAuth(req);
     if (auth.error) return json({ error: auth.error }, auth.status);
 
-    const store = getStore('jobs');
+    const store = getStore('orgchart-jobs');
     const url = new URL(req.url);
 
     if (req.method === 'GET') {
       // File download mode
       const fileId = url.searchParams.get('file');
       if (fileId) {
-        const fileStore = getStore('jobs-files');
+        const fileStore = getStore('jobfiles');
         const fileData = await fileStore.get(fileId, { type: 'json' });
         if (!fileData) {
           return json({ error: 'File not found' }, 404);
@@ -103,7 +103,7 @@ export default async (req, context) => {
         }
         const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
         const size = Math.ceil((dataB64.length * 3) / 4);
-        const fileStore = getStore('jobs-files');
+        const fileStore = getStore('jobfiles');
         await fileStore.set(fileId, JSON.stringify({ name, type, dataB64 }));
 
         return json({

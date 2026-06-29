@@ -50,10 +50,10 @@ export default async (req, context) => {
     const auth = await verifyAuth(req);
     if (auth.error) return json({ error: auth.error }, auth.status);
 
-    const store = getStore('state');
+    const store = getStore('orgchart');
 
     if (req.method === 'GET') {
-      const raw = await store.get('data', { type: 'json' });
+      const raw = await store.get('state', { type: 'json' });
       if (!raw) {
         return json({ state: { employees: [], secondaryLinks: [] }, rev: 0 });
       }
@@ -67,7 +67,7 @@ export default async (req, context) => {
       const body = await req.json();
       const { baseRev, employees, secondaryLinks } = body;
 
-      const raw = await store.get('data', { type: 'json' });
+      const raw = await store.get('state', { type: 'json' });
       const currentRev = raw ? (raw.rev || 0) : 0;
 
       if (baseRev !== undefined && baseRev !== currentRev) {
@@ -75,7 +75,7 @@ export default async (req, context) => {
       }
 
       const newRev = currentRev + 1;
-      await store.set('data', JSON.stringify({
+      await store.set('state', JSON.stringify({
         state: { employees, secondaryLinks: secondaryLinks || [] },
         rev: newRev,
       }));

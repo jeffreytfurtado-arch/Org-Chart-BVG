@@ -79,7 +79,7 @@ function json(data, status = 200) {
 }
 
 async function getConfig(store) {
-  const raw = await store.get('config', { type: 'json' });
+  const raw = await store.get('settings', { type: 'json' });
   if (!raw) return { ...DEFAULT_CONFIG };
   // Merge with defaults for any missing keys
   return {
@@ -97,7 +97,7 @@ async function getConfig(store) {
 }
 
 async function saveConfig(store, config) {
-  await store.set('config', JSON.stringify(config));
+  await store.set('settings', JSON.stringify(config));
 }
 
 function getUserRole(email, config) {
@@ -112,7 +112,7 @@ export default async (req, context) => {
   }
 
   try {
-    const store = getStore('admin');
+    const store = getStore('config');
     const url = new URL(req.url);
 
     if (req.method === 'GET') {
