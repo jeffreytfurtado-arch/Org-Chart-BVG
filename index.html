@@ -191,36 +191,67 @@ body.readonly .clink{display:none!important}
 body.jobs-readonly .jeditonly{display:none!important}
 /* Ask-the-org AI box */
 /* ═══ COLLAPSIBLE AI PANEL ═══ */
-.ai-panel{margin-bottom:18px}
-.ai-panel-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:14px 20px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6366f1,#4f46e5);color:#fff;cursor:pointer;font-size:15px;font-weight:700;letter-spacing:.3px;transition:box-shadow .2s,transform .15s;box-shadow:0 2px 8px rgba(99,102,241,.25)}
-.ai-panel-toggle:hover{box-shadow:0 4px 16px rgba(99,102,241,.4);transform:translateY(-1px)}
-.ai-panel-toggle:active{transform:translateY(0)}
-.ai-panel-toggle .ai-logo{height:28px;width:auto;border-radius:4px;flex-shrink:0}
-.ai-panel-toggle .ai-pill{background:rgba(255,255,255,.2);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;margin-left:2px}
-.ai-panel-toggle .ai-chevron{margin-left:auto;transition:transform .25s}
-.ai-panel-toggle.open .ai-chevron{transform:rotate(180deg)}
-.ai-panel-toggle .ai-sub{font-size:11px;font-weight:400;opacity:.8;margin-left:auto;margin-right:12px}
-.ai-panel-body{display:none;background:var(--card);border:1.5px solid var(--line);border-top:none;border-radius:0 0 12px 12px;padding:16px 20px;animation:aiFadeIn .25s ease}
-.ai-panel-toggle.open{border-radius:12px 12px 0 0}
-.ai-panel-body.open{display:block}
-@keyframes aiFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.ai-welcome{display:flex;gap:10px;align-items:flex-start;margin-bottom:14px}
-.ai-bot-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#6366f1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ai-bot-avatar img{width:20px;height:20px;border-radius:2px}
-.ai-welcome-bubble{background:#f5f3ff;border:1px solid #ede9fe;border-radius:10px;padding:10px 14px;font-size:13px;color:#4c1d95;line-height:1.5}
-.askrow{display:flex;gap:8px}
-.askrow input{flex:1;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;outline:none;color:var(--ink);transition:border-color .2s}
-.askrow input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.15)}
-.askrow button{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s}
-.askrow button:hover{opacity:.9}
-.askrow button:disabled{opacity:.5;cursor:wait}
-.ask-ex{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
-.ask-ex span{font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:100px;padding:5px 12px;cursor:pointer;font-weight:500;transition:background .15s,border-color .15s}
-.ask-ex span:hover{background:#e2e8f0;border-color:#cbd5e1}
-.ask-ans{margin-top:12px;background:#f8f7fd;border:1px solid #ece9fb;border-radius:9px;padding:13px 15px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;display:none}
-.ask-ans.on{display:block}
-.ask-ans .ans-meta{display:block;margin-top:9px;font-size:10.5px;color:#aab;font-style:italic}
+/* ── Old inline AI panels (hidden, replaced by floating chat) ── */
+.ai-panel{display:none!important}
 .ai-pill{background:linear-gradient(90deg,#a855f7,#6366f1);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px}
+
+/* ── Floating AI Chat ── */
+#ai-fab{position:fixed;bottom:24px;right:24px;z-index:9000;width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(99,102,241,.4);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
+#ai-fab:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(99,102,241,.55)}
+#ai-fab svg{width:26px;height:26px}
+#ai-fab .ai-fab-badge{position:absolute;top:-2px;right:-2px;background:#a855f7;color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px}
+
+#ai-chat{position:fixed;bottom:90px;right:24px;z-index:9001;width:420px;max-width:calc(100vw - 48px);height:560px;max-height:calc(100vh - 120px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.06);display:none;flex-direction:column;overflow:hidden;animation:aiSlideUp .25s ease}
+#ai-chat.open{display:flex}
+@keyframes aiSlideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.ai-chat-header{display:flex;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;flex-shrink:0}
+.ai-chat-header .ai-chat-avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-chat-header .ai-chat-avatar img{width:20px;height:20px;border-radius:3px}
+.ai-chat-header .ai-chat-info{flex:1}
+.ai-chat-header .ai-chat-name{font-size:14px;font-weight:700}
+.ai-chat-header .ai-chat-status{font-size:11px;opacity:.8}
+.ai-chat-header .ai-chat-close{background:none;border:none;color:#fff;cursor:pointer;padding:4px;border-radius:6px;opacity:.8;transition:opacity .15s}
+.ai-chat-header .ai-chat-close:hover{opacity:1;background:rgba(255,255,255,.15)}
+.ai-chat-header .ai-chat-clear{background:none;border:none;color:#fff;cursor:pointer;padding:4px;border-radius:6px;opacity:.7;font-size:11px;transition:opacity .15s}
+.ai-chat-header .ai-chat-clear:hover{opacity:1}
+
+.ai-chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.ai-msg{display:flex;gap:8px;max-width:92%;animation:aiFadeMsg .2s ease}
+.ai-msg.user{align-self:flex-end;flex-direction:row-reverse}
+@keyframes aiFadeMsg{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.ai-msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.ai-msg.bot .ai-msg-avatar{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff}
+.ai-msg.user .ai-msg-avatar{background:#e2e8f0;color:#475569}
+.ai-msg-bubble{border-radius:14px;padding:10px 14px;font-size:13px;line-height:1.55;word-break:break-word}
+.ai-msg.bot .ai-msg-bubble{background:#f5f3ff;border:1px solid #ede9fe;color:#1e1b4b;border-top-left-radius:4px}
+.ai-msg.user .ai-msg-bubble{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;border-top-right-radius:4px}
+.ai-msg-bubble p{margin:0 0 6px}
+.ai-msg-bubble p:last-child{margin:0}
+.ai-msg-bubble ul,.ai-msg-bubble ol{margin:4px 0;padding-left:18px}
+.ai-msg-bubble li{margin:2px 0}
+.ai-msg-bubble strong{font-weight:700}
+.ai-msg-bubble code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:12px}
+.ai-msg-meta{font-size:10px;color:#a0a0b0;margin-top:4px;text-align:right}
+.ai-msg.bot .ai-msg-meta{text-align:left;margin-left:36px}
+
+.ai-typing{display:flex;gap:4px;align-items:center;padding:8px 14px}
+.ai-typing-dot{width:6px;height:6px;border-radius:50%;background:#a78bfa;animation:aiTyping 1.2s infinite}
+.ai-typing-dot:nth-child(2){animation-delay:.2s}
+.ai-typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes aiTyping{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+.ai-suggestions{padding:8px 16px 4px;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;border-top:1px solid #f1f0f5}
+.ai-suggestions span{font-size:11px;color:#6d28d9;background:#f5f3ff;border:1px solid #ede9fe;border-radius:100px;padding:5px 12px;cursor:pointer;font-weight:500;transition:all .15s;white-space:nowrap}
+.ai-suggestions span:hover{background:#ede9fe;border-color:#c4b5fd}
+
+.ai-chat-input{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #f1f0f5;flex-shrink:0;background:#fafafa}
+.ai-chat-input input{flex:1;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:13px;outline:none;background:#fff;transition:border-color .2s}
+.ai-chat-input input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.12)}
+.ai-chat-input button{width:38px;height:38px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s;flex-shrink:0}
+.ai-chat-input button:hover{opacity:.9}
+.ai-chat-input button:disabled{opacity:.4;cursor:not-allowed}
+.ai-chat-input button svg{width:18px;height:18px}
 @media print{
   .sidebar,.page-toolbar,.dbar,.stats,.zctrls,#jobsview,.tip,.toast,.cbadge-count,.hdr{display:none!important}
   body{height:auto;overflow:visible}
@@ -1105,6 +1136,7 @@ label{color:var(--ink)}
     <div id="j-audit" class="muted" style="margin-top:12px;border-top:1px solid #eef0f4;padding-top:8px"></div>
     <div class="modal-actions">
       <button class="btn btn-del" id="j-del" onclick="deleteJob()" style="display:none;margin-right:auto;background:#ef4444;color:#fff">Delete role</button>
+      <button class="btn" id="j-addchart" onclick="addFilledRoleToChart()" style="display:none;background:#7c3aed;color:#fff">Add to Org Chart</button>
       <button class="btn" onclick="closeJobModal()">Cancel</button>
       <button class="btn btn-go" id="j-go" onclick="submitJob()">Add Role</button>
     </div>
@@ -2420,6 +2452,7 @@ function setView(v){
   const alumniEl=document.getElementById('alumniview');
   if(alumniEl) alumniEl.style.display=alumni?'block':'none';
   document.getElementById('hdr-sub').style.display=org?'':'none';
+  if(_aiChatOpen) updateAiSuggestions();
   if(org){ console.log('[setView org] EMPLOYEES.length=',EMPLOYEES.length,'STATE_REV=',STATE_REV); console.log('[setView org] ALL reports_to:',EMPLOYEES.map(e=>e.name+':'+e.reports_to).join(' | ')); initTree(); render(); setTimeout(zoomFit,40); }
   else if(jobs){ renderJobs(); }
   else if(admin){ renderAdminPanel(); }
@@ -2582,6 +2615,13 @@ function openJobModal(id){
   renderStages(); renderCandidates();
   renderModalCustomFields('j-custom-fields','jobs',job?job.customFields||{}:{});
   jobModalDisable(!IS_JOBS_EDITOR);
+  // Show "Add to Org Chart" for Filled roles that aren't yet on the chart as employees
+  const addChartBtn=document.getElementById('j-addchart');
+  if(addChartBtn){
+    const showIt=job && job.status==='Filled' && job.showOnChart!=='no' && IS_JOBS_EDITOR &&
+      !EMPLOYEES.some(e=>e.position===job.title && e.reports_to===job.owner);
+    addChartBtn.style.display=showIt?'':'none';
+  }
   document.getElementById('jmodalbg').classList.add('on');
 }
 function closeJobModal(){ document.getElementById('jmodalbg').classList.remove('on'); editJobId=null; }
@@ -2674,10 +2714,10 @@ function submitJob(){
     updatedAt:now,
     updatedBy:CURRENT_EMAIL
   };
-  let wasOnChart=false, prevStatus='', filledJob=null;
+  let filledJob=null;
   if(editJobId){
     const j=JOBS.find(x=>x.id===editJobId);
-    if(j){ prevStatus=j.status||''; wasOnChart=j.showOnChart!=='no'; Object.assign(j,rec); filledJob=j; }
+    if(j){ Object.assign(j,rec); filledJob=j; }
   } else {
     rec.id='role-'+Date.now().toString(36); rec.createdAt=now; rec.createdBy=CURRENT_EMAIL;
     JOBS.push(rec); filledJob=rec;
@@ -2686,8 +2726,11 @@ function submitJob(){
   pushJobs(); renderJobs();
   if(currentView==='org'){ initTree(); render(); }
   showToast(editJobId?'Role updated':'Role added');
-  if(editJobId && rec.status==='Filled' && prevStatus!=='Filled' && wasOnChart && filledJob){
-    openFillRole(filledJob);
+  // Offer to add employee when role is Filled and was on the chart
+  if(filledJob && rec.status==='Filled' && rec.showOnChart!=='no'){
+    // Check if there's already an employee with this exact title under the same manager
+    const alreadyExists=EMPLOYEES.some(e=>e.position===filledJob.title && e.reports_to===filledJob.owner);
+    if(!alreadyExists) setTimeout(()=>openFillRole(filledJob),200);
   }
 }
 function deleteJob(){
@@ -2713,6 +2756,13 @@ function openFillRole(job){
   setTimeout(()=>document.getElementById('fr-name').focus(),100);
 }
 function closeFillRole(){ document.getElementById('fillrolebg').classList.remove('on'); _fillRoleJob=null; }
+function addFilledRoleToChart(){
+  if(!editJobId) return;
+  const j=JOBS.find(x=>x.id===editJobId);
+  if(!j) return;
+  closeJobModal();
+  setTimeout(()=>openFillRole(j),200);
+}
 function submitFillRole(){
   if(!_fillRoleJob) return;
   const name=document.getElementById('fr-name').value.trim();
@@ -3963,31 +4013,128 @@ function executeOffboard(){
 // ===== setView update for alumni =====
 var _origSetView=typeof setView==='function'?setView:null;
 
-// ═══ AI PANEL TOGGLE ═══
-function toggleAiPanel(view){
-  var toggle=document.querySelector('#askbar-'+view+' .ai-panel-toggle');
-  var body=document.getElementById('ai-body-'+view);
-  if(!toggle||!body) return;
-  var isOpen=toggle.classList.toggle('open');
-  body.classList.toggle('open',isOpen);
+// ═══ FLOATING AI CHAT ═══
+let _aiChatOpen=false, _aiChatBusy=false, _aiChatHistory=[];
+const AI_SUGGESTIONS={
+  org:['Who reports to Albert?','Which departments are largest?','Show me the leadership team','Who has the longest tenure?'],
+  jobs:['Which departments have the most open roles?','List roles pending budget approval','Which roles have been open longest?','How many contractors vs full-time?'],
+  raci:['Which domains have no accountable owner?','Who is responsible for the most domains?','Are there any RACI gaps?','Which processes need attention?'],
+  bf:['What are the biggest single-point-of-failure risks?','Who has no backup assigned?','List all critical risk entries','Which teams have bus factor issues?']
+};
+function toggleAiChat(){
+  _aiChatOpen=!_aiChatOpen;
+  document.getElementById('ai-chat').classList.toggle('open',_aiChatOpen);
+  if(_aiChatOpen){
+    updateAiSuggestions();
+    injectAiChatLogo();
+    setTimeout(()=>document.getElementById('ai-chat-q').focus(),100);
+  }
 }
-function injectAiLogos(){
-  // Copy the company logo from hdr-logo into each AI panel toggle and bot avatar
-  var hdrLogo=document.getElementById('hdr-logo');
-  if(!hdrLogo||!hdrLogo.src||hdrLogo.style.display==='none') return;
-  var src=hdrLogo.src;
-  ['jobs','raci','bf'].forEach(function(v){
-    var logo=document.querySelector('.ai-logo-'+v);
-    if(logo){ logo.src=src; logo.style.display=''; }
-    var avatar=document.querySelector('.ai-avatar-'+v);
-    if(avatar){
-      avatar.src=src; avatar.style.display='';
-      // Hide the fallback SVG
-      var fallback=avatar.parentElement.querySelector('.ai-avatar-fallback');
-      if(fallback) fallback.style.display='none';
+function updateAiSuggestions(){
+  const view=currentView||'org';
+  const key=view==='busfactor'?'bf':view;
+  const items=AI_SUGGESTIONS[key]||AI_SUGGESTIONS.org;
+  const el=document.getElementById('ai-suggestions');
+  el.innerHTML=items.map(s=>'<span onclick="askFromSuggestion(this)">'+s+'</span>').join('');
+}
+function askFromSuggestion(el){
+  document.getElementById('ai-chat-q').value=el.textContent;
+  sendAiChat();
+}
+function clearAiChat(){
+  _aiChatHistory=[];
+  const el=document.getElementById('ai-chat-messages');
+  el.innerHTML='<div class="ai-msg bot"><div class="ai-msg-avatar"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.3)"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="10" r="1" fill="#fff"/><circle cx="15" cy="10" r="1" fill="#fff"/></svg></div><div class="ai-msg-bubble"><p>Chat cleared. Ask me anything about your org.</p></div></div>';
+  updateAiSuggestions();
+}
+function addChatMsg(role,html,meta){
+  const el=document.getElementById('ai-chat-messages');
+  const initials=role==='user'?(CURRENT_EMAIL?CURRENT_EMAIL.split('@')[0].slice(0,2).toUpperCase():'U'):'';
+  const avatarInner=role==='bot'?'<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.3)"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="10" r="1" fill="#fff"/><circle cx="15" cy="10" r="1" fill="#fff"/></svg>':initials;
+  let msg='<div class="ai-msg '+role+'"><div class="ai-msg-avatar">'+avatarInner+'</div><div class="ai-msg-bubble">'+html+'</div></div>';
+  if(meta) msg=msg.replace('</div></div>','<div class="ai-msg-meta">'+meta+'</div></div></div>');
+  el.insertAdjacentHTML('beforeend',msg);
+  el.scrollTop=el.scrollHeight;
+}
+function showTypingIndicator(){
+  const el=document.getElementById('ai-chat-messages');
+  el.insertAdjacentHTML('beforeend','<div class="ai-msg bot" id="ai-typing"><div class="ai-msg-avatar"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.3)"/></svg></div><div class="ai-msg-bubble"><div class="ai-typing"><div class="ai-typing-dot"></div><div class="ai-typing-dot"></div><div class="ai-typing-dot"></div></div></div></div>');
+  el.scrollTop=el.scrollHeight;
+}
+function removeTypingIndicator(){ const t=document.getElementById('ai-typing'); if(t) t.remove(); }
+function mdToHtml(text){
+  if(!text) return '';
+  let s=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  s=s.replace(/`(.+?)`/g,'<code>$1</code>');
+  s=s.replace(/^### (.+)$/gm,'<strong style="font-size:14px">$1</strong>');
+  s=s.replace(/^## (.+)$/gm,'<strong style="font-size:15px">$1</strong>');
+  s=s.replace(/^# (.+)$/gm,'<strong style="font-size:16px">$1</strong>');
+  const lines=s.split('\n');
+  let out='',inList=false;
+  lines.forEach(line=>{
+    const li=line.match(/^[\-\*•]\s+(.+)/);
+    const nli=line.match(/^\d+[\.\)]\s+(.+)/);
+    if(li||nli){
+      if(!inList){ out+=(li?'<ul>':'<ol>'); inList=li?'ul':'ol'; }
+      out+='<li>'+(li?li[1]:nli[1])+'</li>';
+    } else {
+      if(inList){ out+='</'+inList+'>'; inList=false; }
+      if(line.trim()) out+='<p>'+line+'</p>';
     }
   });
+  if(inList) out+='</'+inList+'>';
+  return out;
 }
+async function sendAiChat(){
+  if(_aiChatBusy) return;
+  const input=document.getElementById('ai-chat-q');
+  const q=(input.value||'').trim();
+  if(!q) return;
+  input.value='';
+  addChatMsg('user','<p>'+q.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p>');
+  _aiChatBusy=true;
+  document.getElementById('ai-chat-send').disabled=true;
+  document.getElementById('ai-chat-status').textContent='Thinking...';
+  showTypingIndicator();
+  try{
+    const view=currentView==='busfactor'?'bf':(currentView||'jobs');
+    const ctx=buildAskContext(view==='org'?'all':view);
+    const r=await authedFetch(ASK_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:q,context:ctx})});
+    const d=await r.json().catch(()=>({}));
+    removeTypingIndicator();
+    if(!r.ok){
+      addChatMsg('bot','<p>'+(d.detail||d.error||'Sorry, I couldn\'t get an answer ('+r.status+').')+'</p>');
+    } else {
+      const srcLabel=view==='raci'?'RACI + org chart':view==='bf'?'bus factor + org chart':'org chart + roles';
+      addChatMsg('bot',mdToHtml(d.answer),escHtml(d.engine||'AI')+' · '+srcLabel);
+    }
+  }catch(e){
+    removeTypingIndicator();
+    addChatMsg('bot','<p>Could not reach the AI service. Please try again.</p>');
+  }
+  _aiChatBusy=false;
+  document.getElementById('ai-chat-send').disabled=false;
+  document.getElementById('ai-chat-status').textContent='Ask about org chart, roles, RACI, bus factor';
+}
+// Keep old functions as no-ops for backward compat
+function toggleAiPanel(){}
+function askAI(view){
+  if(!_aiChatOpen) toggleAiChat();
+  const suggestions=AI_SUGGESTIONS[view]||AI_SUGGESTIONS.org;
+  if(suggestions.length){ document.getElementById('ai-chat-q').value=suggestions[0]; }
+}
+function askExTo(el,view){ document.getElementById('ai-chat-q').value=el.textContent; if(!_aiChatOpen) toggleAiChat(); sendAiChat(); }
+function injectAiChatLogo(){
+  var hdrLogo=document.getElementById('hdr-logo');
+  if(!hdrLogo||!hdrLogo.src||hdrLogo.style.display==='none') return;
+  var chatLogo=document.getElementById('ai-chat-logo');
+  if(chatLogo){ chatLogo.src=hdrLogo.src; chatLogo.style.display=''; }
+  var fallback=document.getElementById('ai-chat-logo-fallback');
+  if(fallback) fallback.style.display='none';
+}
+function injectAiLogos(){ injectAiChatLogo(); }
 // INIT
 function init(){
   loadState();
@@ -4006,5 +4153,42 @@ function init(){
 init();
 
 </script>
+
+<!-- Floating AI Chat -->
+<button id="ai-fab" onclick="toggleAiChat()" title="Ask AI about your org">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+  <span class="ai-fab-badge">AI</span>
+</button>
+
+<div id="ai-chat">
+  <div class="ai-chat-header">
+    <div class="ai-chat-avatar">
+      <img id="ai-chat-logo" src="" alt="AI" style="display:none">
+      <svg id="ai-chat-logo-fallback" viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.25)"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="10" r="1" fill="#fff"/><circle cx="15" cy="10" r="1" fill="#fff"/></svg>
+    </div>
+    <div class="ai-chat-info">
+      <div class="ai-chat-name">BVG Assistant</div>
+      <div class="ai-chat-status" id="ai-chat-status">Ask about org chart, roles, RACI, bus factor</div>
+    </div>
+    <button class="ai-chat-clear" onclick="clearAiChat()" title="Clear chat">Clear</button>
+    <button class="ai-chat-close" onclick="toggleAiChat()" title="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="ai-chat-messages" id="ai-chat-messages">
+    <div class="ai-msg bot">
+      <div class="ai-msg-avatar"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.3)"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="10" r="1" fill="#fff"/><circle cx="15" cy="10" r="1" fill="#fff"/></svg></div>
+      <div class="ai-msg-bubble"><p>Hi! I'm your BVG org assistant. I can answer questions about the org chart, open roles, RACI matrix, and bus factor risks.</p><p>Try a suggestion below, or ask me anything.</p></div>
+    </div>
+  </div>
+  <div class="ai-suggestions" id="ai-suggestions"></div>
+  <div class="ai-chat-input">
+    <input type="text" id="ai-chat-q" placeholder="Ask a question..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendAiChat()">
+    <button id="ai-chat-send" onclick="sendAiChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
 </body>
 </html>
