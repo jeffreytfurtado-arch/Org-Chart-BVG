@@ -57,7 +57,10 @@ export default async (req, context) => {
       if (!raw) {
         return json({ state: { employees: [], secondaryLinks: [] }, rev: 0 });
       }
-      return json({ state: raw.state || { employees: [], secondaryLinks: [] }, rev: raw.rev || 0 });
+      // Handle both formats: flat { employees, secondaryLinks, rev } and nested { state: {...}, rev }
+      const employees = raw.state?.employees || raw.employees || [];
+      const secondaryLinks = raw.state?.secondaryLinks || raw.secondaryLinks || [];
+      return json({ state: { employees, secondaryLinks }, rev: raw.rev || 0 });
     }
 
     if (req.method === 'POST') {
@@ -75,9 +78,13 @@ export default async (req, context) => {
       }
 
       const newRev = currentRev + 1;
+      // Store in flat format to match original function behavior
       await store.set('state', JSON.stringify({
-        state: { employees, secondaryLinks: secondaryLinks || [] },
+        employees: employees || [],
+        secondaryLinks: secondaryLinks || [],
         rev: newRev,
+        updatedBy: auth.email,
+        updatedAt: new Date().toISOString(),
       }));
 
       return json({ rev: newRev });
