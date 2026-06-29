@@ -1,0 +1,9 @@
+{
+  "name": "bvg-org-chart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Big Viking Games — Org Chart, RACI & Bus Factor tool",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
