@@ -1095,6 +1095,28 @@ label{color:var(--ink)}
   </div>
 </div>
 
+<!-- Fill Role → Create Employee Modal -->
+<div class="modal-bg" id="fillrolebg" onclick="if(event.target===this)closeFillRole()">
+  <div class="modal" style="max-width:440px">
+    <h2>Add New Employee</h2>
+    <p class="muted" id="fill-role-desc" style="margin:-4px 0 12px"></p>
+    <label>Full name *</label>
+    <input type="text" id="fr-name" placeholder="e.g. Jane Smith">
+    <label>Email (company)</label>
+    <input type="email" id="fr-email" placeholder="e.g. jsmith@bigvikinggames.com">
+    <label>Employment type</label>
+    <select id="fr-type"><option value="full-time">Full-time</option><option value="contractor">Contractor</option><option value="intern">Intern</option></select>
+    <label>LinkedIn profile URL</label>
+    <input type="text" id="fr-linkedin" placeholder="https://linkedin.com/in/...">
+    <label>Photo URL (optional)</label>
+    <input type="text" id="fr-photo" placeholder="https://...">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeFillRole()">Skip</button>
+      <button class="btn btn-go" onclick="submitFillRole()">Add to Org Chart</button>
+    </div>
+  </div>
+</div>
+
 <!-- RACI Edit Modal -->
 <div class="modal-bg" id="raci-modalbg" onclick="if(event.target===this)closeRaciModal()">
   <div class="modal modal-wide">
@@ -2520,16 +2542,21 @@ function submitJob(){
     updatedAt:now,
     updatedBy:CURRENT_EMAIL
   };
+  let wasOnChart=false, prevStatus='', filledJob=null;
   if(editJobId){
-    const j=JOBS.find(x=>x.id===editJobId); if(j) Object.assign(j,rec);
+    const j=JOBS.find(x=>x.id===editJobId);
+    if(j){ prevStatus=j.status||''; wasOnChart=j.showOnChart!=='no'; Object.assign(j,rec); filledJob=j; }
   } else {
     rec.id='role-'+Date.now().toString(36); rec.createdAt=now; rec.createdBy=CURRENT_EMAIL;
-    JOBS.push(rec);
+    JOBS.push(rec); filledJob=rec;
   }
   closeJobModal();
   pushJobs(); renderJobs();
   if(currentView==='org'){ initTree(); render(); }
   showToast(editJobId?'Role updated':'Role added');
+  if(editJobId && rec.status==='Filled' && prevStatus!=='Filled' && wasOnChart && filledJob){
+    openFillRole(filledJob);
+  }
 }
 function deleteJob(){
   if(!IS_JOBS_EDITOR||!editJobId) return;
@@ -2540,6 +2567,51 @@ function deleteJob(){
   if(currentView==='org'){ initTree(); render(); }
   showToast('Role deleted');
 }
+// ----- Fill Role → Create Employee -----
+let _fillRoleJob=null;
+function openFillRole(job){
+  _fillRoleJob=job;
+  document.getElementById('fr-name').value='';
+  document.getElementById('fr-email').value='';
+  document.getElementById('fr-type').value=job.type==='Contractor'?'contractor':job.type==='Intern'?'intern':'full-time';
+  document.getElementById('fr-linkedin').value='';
+  document.getElementById('fr-photo').value='';
+  document.getElementById('fill-role-desc').textContent='Role "'+job.title+'" marked as filled. Add the new hire to the org chart?';
+  document.getElementById('fillrolebg').classList.add('on');
+  setTimeout(()=>document.getElementById('fr-name').focus(),100);
+}
+function closeFillRole(){ document.getElementById('fillrolebg').classList.remove('on'); _fillRoleJob=null; }
+function submitFillRole(){
+  if(!_fillRoleJob) return;
+  const name=document.getElementById('fr-name').value.trim();
+  if(!name){ alert('Please enter the employee name.'); return; }
+  const emailInput=document.getElementById('fr-email').value.trim().toLowerCase();
+  const type=document.getElementById('fr-type').value;
+  const linkedin=document.getElementById('fr-linkedin').value.trim();
+  const photo=document.getElementById('fr-photo').value.trim();
+  const job=_fillRoleJob;
+  const dept=job.dept||'';
+  const mgr=job.owner||null;
+  const badge=type==='contractor'?{badgeLabel:'C',badgeFg:'#1565c0',badgeBg:'#e3f2fd'}
+            :type==='intern'?{badgeLabel:'INT',badgeFg:'#e65100',badgeBg:'#fff3e0'}
+            :{badgeLabel:'FT',badgeFg:'#2e7d32',badgeBg:'#e8f5e9'};
+  let id=emailInput;
+  if(!id){
+    let base=name.toLowerCase().replace(/[^a-z0-9]+/g,'.').replace(/^\.|\.$/g,'')||'person';
+    id=base+'@added.local'; let n=2;
+    while(EMPLOYEES.some(e=>e.id===id||e.email===id)){ id=base+n+'@added.local'; n++; }
+  }
+  if(EMPLOYEES.some(e=>e.id===id||e.email===id)){ alert('An employee with that email already exists.'); return; }
+  EMPLOYEES.push({id,name,position:job.title||'—',dept,email:id,reports_to:mgr,type,color:deptColor(dept),
+    photo:photo||undefined,linkedin:linkedin||undefined,...badge,customFields:{}});
+  buildDeptPills(); initTree();
+  if(mgr){ let cur=mgr; while(cur){ collapsed.delete(cur); cur=tree[cur]?.parent; } }
+  saveState(); render();
+  closeFillRole();
+  showToast(name+' added to org chart under '+(mgr&&tree[mgr]?tree[mgr].name:'top level'));
+  if(currentView!=='org') setView('org');
+}
+
 function jobsExportRows(){
   const headers=['Title','Department','Owner','Status','Priority','Budget','Openings','Candidates','Stages','Furthest stage','Candidate names','Type','Location','Compensation','Date opened','Days open','Workable','LinkedIn','JD','Updated by','Updated at'];
   const rows=JOBS.map(j=>{
