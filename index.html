@@ -124,9 +124,10 @@ body.readonly .clink{display:none!important}
 .modal label{display:block;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.3px;color:#6b7488;margin:12px 0 5px}
 .modal input,.modal select{width:100%;padding:10px 14px;border:1px solid #e7e9f2;border-radius:10px;font-size:13px;outline:none;color:#1b2333}
 .modal input:focus,.modal select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
-.modal-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end}
-.modal-actions .btn{background:#f4f5fb;color:#1b2333;font-weight:500;border-radius:10px;padding:10px 18px}.modal-actions .btn:hover{background:#e7e9f2}
-.modal-actions .btn-go{background:var(--brand);color:var(--brand-text);border-radius:10px;padding:10px 18px;font-weight:500}.modal-actions .btn-go:hover{background:var(--brand-d)}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.modal-actions .btn{background:#f1f5f9;color:#475569;font-weight:500;border-radius:8px;padding:7px 16px;font-size:13px;border:1px solid #e2e8f0;cursor:pointer;transition:background .15s}.modal-actions .btn:hover{background:#e2e8f0}
+.modal-actions .btn-go{background:var(--brand,#1e293b);color:var(--brand-text,#fff);border:none;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}.modal-actions .btn-go:hover{opacity:.9}
+.modal-actions .btn-del{padding:7px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:none}
 /* avatar (face icon) + linkedin */
 .chead{display:flex;gap:9px;align-items:center;padding-right:20px}
 .chead-txt{min-width:0;flex:1}
@@ -435,11 +436,7 @@ body{background:var(--bg);color:var(--ink);font-size:13px}
 .modal label{font-weight:500;color:var(--muted);font-size:10px;letter-spacing:.4px}
 .modal input,.modal select{border-radius:8px;border:1px solid var(--line);color:var(--ink);background:var(--card);padding:8px 12px;font-size:13px}
 .modal input:focus,.modal select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,0,0,.06)}
-.modal-actions{gap:8px;margin-top:20px}
-.modal-actions .btn{background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:7px 16px;font-size:13px;border-radius:8px;font-weight:500}
-.modal-actions .btn:hover{background:#e2e8f0}
-.modal-actions .btn-go{background:var(--accent);color:#fff;border:none;padding:7px 20px;font-size:13px;border-radius:8px;font-weight:500}
-.modal-actions .btn-go:hover{background:var(--accent-d)}
+.modal-actions{gap:8px;margin-top:18px}
 .modal-wide{width:560px}
 .linkbtn{border-radius:8px;border:1.5px dashed var(--line);color:var(--muted);padding:8px;font-size:12px;font-weight:500}
 .linkbtn:hover{background:var(--bg);border-color:#cbd5e1}
@@ -1421,8 +1418,7 @@ let JOBS=[
   {id:'role-senior-hr-ops',title:'Senior HR & Operations Leader',dept:'People & Culture',owner:'jfurtado@bigvikinggames.com',status:'Open',priority:'High',type:'Full-time',location:'Toronto, ON (Hybrid, 4 days)',comp:'',dateOpened:'2026-06-01',showOnChart:'yes',workable:'',linkedin:'',otherLinks:[],jdFiles:[{url:'jds/Senior-HR-and-Operations-Leader.pdf',name:'Senior HR & Operations Leader.pdf'}],notes:'',createdAt:'2026-06-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',_seedRev:2},
   {id:'role-intermediate-se',title:'Intermediate Software Engineer',dept:'Developers',owner:'nguetter@bigvikinggames.com',status:'Open',priority:'Medium',type:'Full-time',location:'Toronto, ON (Hybrid, 3 days)',comp:'',dateOpened:'2026-06-15',showOnChart:'yes',budgetStatus:'',headcount:1,workable:'',linkedin:'',otherLinks:[],jdFiles:[{url:'jds/Intermediate-Software-Engineer.pdf',name:'Intermediate Software Engineer.pdf'}],notes:'',createdAt:'2026-06-15T00:00:00.000Z',updatedAt:'2026-06-15T00:00:00.000Z',_seedRev:2},
   {id:'role-exec-business-partner',title:'Executive Business Partner, Office of the CEO',dept:'Executive',owner:'albert@bigvikinggames.com',status:'Open',priority:'High',type:'Full-time',location:'Toronto, ON (In-office, 5 days)',comp:'$70,000–$100,000 CAD (up to $120,000)',dateOpened:'2026-06-15',showOnChart:'yes',budgetStatus:'',headcount:1,workable:'',linkedin:'',otherLinks:[],jdFiles:[{url:'jds/Executive-Business-Partner-Office-of-the-CEO.pdf',name:'Executive Business Partner, Office of the CEO.pdf'}],notes:'',createdAt:'2026-06-15T00:00:00.000Z',updatedAt:'2026-06-15T00:00:00.000Z',_seedRev:3},
-  {id:'role-senior-se-games',title:'Senior Software Engineer, Games',dept:'Developers',owner:'nguetter@bigvikinggames.com',status:'Open',priority:'High',type:'Full-time',location:'Toronto, ON (Hybrid, 3 days)',comp:'$95,000–$132,000 CAD',dateOpened:'2026-06-17',showOnChart:'yes',budgetStatus:'',headcount:1,workable:'',linkedin:'',otherLinks:[],jdFiles:[{url:'jds/Senior-Software-Engineer-Games.pdf',name:'Senior Software Engineer, Games.pdf'}],notes:'',createdAt:'2026-06-17T00:00:00.000Z',updatedAt:'2026-06-17T00:00:00.000Z',_seedRev:4},
-  {id:'role-fullstack-ai-agentic',title:'Full Stack Engineer, AI Agentic Products & Workflows',dept:'Developers',owner:'madzunkov@gmail.com',status:'Open',priority:'High',type:'Full-time',location:'Toronto, ON (Hybrid, 3 days)',comp:'',dateOpened:'2026-06-01',showOnChart:'yes',budgetStatus:'',headcount:2,workable:'',linkedin:'',otherLinks:[],jdFiles:[],notes:'',createdAt:'2026-06-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',_seedRev:4}
+  {id:'role-senior-se-games',title:'Senior Software Engineer, Games',dept:'Developers',owner:'nguetter@bigvikinggames.com',status:'Open',priority:'High',type:'Full-time',location:'Toronto, ON (Hybrid, 3 days)',comp:'$95,000–$132,000 CAD',dateOpened:'2026-06-17',showOnChart:'yes',budgetStatus:'',headcount:1,workable:'',linkedin:'',otherLinks:[],jdFiles:[{url:'jds/Senior-Software-Engineer-Games.pdf',name:'Senior Software Engineer, Games.pdf'}],notes:'',createdAt:'2026-06-17T00:00:00.000Z',updatedAt:'2026-06-17T00:00:00.000Z',_seedRev:4}
 ];
 const SEED_JOBS=JSON.parse(JSON.stringify(JOBS));
 let IS_JOBS_EDITOR=false, JOBS_REV=0, JOBS_LOADED=false, currentView='org', editJobId=null;
