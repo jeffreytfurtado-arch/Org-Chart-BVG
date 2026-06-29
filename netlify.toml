@@ -1,10 +1,9 @@
 [build]
-  command = "npm install"
-  publish = "."
+  command = "npm install && mkdir -p site && cp index.html site/ && cp careers.html site/ 2>/dev/null; cp -r jds site/ 2>/dev/null; true"
+  publish = "site"
 
 [functions]
   directory = "netlify/functions"
-  node_bundler = "esbuild"
 
 [[headers]]
   for = "/*"
@@ -12,8 +11,10 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
 
 [[headers]]
   for = "/*.html"
   [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate"

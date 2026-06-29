@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Big Viking Games — Open Roles</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#eef0f4;color:#222;line-height:1.5}
+.hero{background:#1a1a2e;color:#fff;padding:46px 22px 38px;text-align:center}
+.hero h1{font-size:30px;font-weight:800;letter-spacing:.3px}
+.hero p{opacity:.7;margin-top:8px;font-size:15px}
+.wrap{max-width:860px;margin:-22px auto 60px;padding:0 18px}
+.count{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:#8a90a0;margin:26px 4px 12px;font-weight:700}
+.role{background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);padding:18px 20px;margin-bottom:14px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.role-main{flex:1;min-width:220px}
+.role h2{font-size:17px;color:#1a1a2e}
+.role .meta{font-size:13px;color:#777;margin-top:4px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#a855f7;margin-right:6px;vertical-align:middle}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions a{display:inline-block;padding:9px 15px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none}
+.apply{background:#22c55e;color:#fff}.apply:hover{background:#16a34a}
+.li{background:#0a66c2;color:#fff}.li:hover{background:#004182}
+.jd{background:#eef1f6;color:#33405c}.jd:hover{background:#e0e5ef}
+.empty{background:#fff;border-radius:12px;padding:48px;text-align:center;color:#999}
+.foot{text-align:center;color:#aab;font-size:12px;padding:24px}
+.foot a{color:#8a90a0}
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>Join Big Viking Games</h1>
+  <p>We build, operate, and grow long-standing online game communities from Toronto.</p>
+</div>
+<div class="wrap">
+  <div class="count" id="count">Loading open roles…</div>
+  <div id="roles"></div>
+</div>
+<div class="foot">Big Viking Games &bull; <a href="https://www.bigvikinggames.com" target="_blank" rel="noopener">bigvikinggames.com</a></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function load(){
+  try{
+    const r=await fetch('/.netlify/functions/jobs?public=1');
+    const d=await r.json();
+    const jobs=(d&&d.jobs)||[];
+    const host=document.getElementById('roles');
+    document.getElementById('count').textContent=jobs.length?(jobs.length+' open role'+(jobs.length!==1?'s':'')):'';
+    if(!jobs.length){ host.innerHTML='<div class="empty">No open roles right now — check back soon!</div>'; return; }
+    host.innerHTML=jobs.map(j=>{
+      const meta=[j.dept,j.location,j.type].filter(Boolean).map(esc).join(' &bull; ');
+      let a='';
+      if(j.workable) a+='<a class="apply" href="'+esc(j.workable)+'" target="_blank" rel="noopener">Apply</a>';
+      if(j.linkedin) a+='<a class="li" href="'+esc(j.linkedin)+'" target="_blank" rel="noopener">LinkedIn</a>';
+      if(j.jd) a+='<a class="jd" href="'+esc(j.jd)+'" target="_blank" rel="noopener">Job description</a>';
+      if(!a) a='<span style="color:#bbb;font-size:13px">Details coming soon</span>';
+      return '<div class="role"><div class="role-main"><h2><span class="dot"></span>'+esc(j.title)+'</h2><div class="meta">'+meta+'</div></div><div class="actions">'+a+'</div></div>';
+    }).join('');
+  }catch(e){
+    document.getElementById('count').textContent='';
+    document.getElementById('roles').innerHTML='<div class="empty">Could not load roles right now.</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>
