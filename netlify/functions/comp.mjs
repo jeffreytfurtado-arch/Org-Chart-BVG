@@ -58,7 +58,7 @@ export default async (req, context) => {
       return json({ error: 'Not authorized to view compensation data' }, 403);
     }
 
-    const store = getStore('orgchart-comp');
+    const store = getStore('comp');
     const raw = await store.get('data', { type: 'json' });
 
     return json({ comp: raw ? (raw.comp || {}) : {} });

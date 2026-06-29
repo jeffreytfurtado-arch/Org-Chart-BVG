@@ -50,7 +50,7 @@ export default async (req, context) => {
     const auth = await verifyAuth(req);
     if (auth.error) return json({ error: auth.error }, auth.status);
 
-    const store = getStore('orgchart-raci');
+    const store = getStore('raci');
 
     if (req.method === 'GET') {
       const raw = await store.get('data', { type: 'json' });

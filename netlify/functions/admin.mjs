@@ -112,7 +112,7 @@ export default async (req, context) => {
   }
 
   try {
-    const store = getStore('orgchart-admin');
+    const store = getStore('admin');
     const url = new URL(req.url);
 
     if (req.method === 'GET') {
