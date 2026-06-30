@@ -3611,6 +3611,55 @@ function exportRaciPDF(){
   setTimeout(()=>{w.print();},500);
 }
 
+var _reconcileTimer=null;
+function scheduleReconcile(){
+  if(_reconcileTimer) clearTimeout(_reconcileTimer);
+  _reconcileTimer=setTimeout(reconcileRaciBf, 800);
+}
+function reconcileRaciBf(){
+  if(!IS_EDITOR||!RACI_LOADED||!BF_LOADED||!STATE_LOADED) return;
+  var domains=RACI_DOMAINS.length?RACI_DOMAINS:RACI_SEED_DOMAINS;
+  var processes=RACI_PROCESSES.length?RACI_PROCESSES:RACI_SEED_PROCESSES;
+  var bfEntries=BF_ENTRIES.length?BF_ENTRIES:BF_SEED;
+  var raciChanged=false, bfChanged=false;
+  var filledJobs=JOBS.filter(function(j){ return j.status==='Filled'; });
+  EMPLOYEES.forEach(function(emp){
+    var title=emp.position||'';
+    if(!title||title==='—') return;
+    var tLow=title.toLowerCase().split(/[,\/]/)[0].trim();
+    [domains,processes].forEach(function(list){
+      list.forEach(function(item){
+        if(!item.gap) return;
+        var gapLow=item.gap.toLowerCase();
+        if(gapLow.indexOf(tLow)===-1 && gapLow.indexOf('tbd')===-1) return;
+        var matchesRole=gapLow.indexOf(tLow)!==-1;
+        var hasTbd=(item.a==='tbd@added.local'||item.a==='TBD');
+        if(matchesRole && hasTbd){
+          item.a=emp.email; item.gap=null; raciChanged=true;
+        }
+      });
+    });
+    bfEntries.forEach(function(b){
+      if(!b.backup) return;
+      var bLow=b.backup.toLowerCase();
+      if(bLow.indexOf('tbd')!==-1 && bLow.indexOf(tLow)!==-1){
+        b.backup=b.backup.replace(/[^,;]*tbd[^,;]*/gi, emp.name+' (hired)');
+        bfChanged=true;
+      }
+    });
+  });
+  if(raciChanged){
+    RACI_DOMAINS=domains; RACI_PROCESSES=processes;
+    pushRaci();
+    if(currentView==='raci') renderRaci();
+  }
+  if(bfChanged){
+    BF_ENTRIES=bfEntries;
+    pushBusFactor();
+    if(currentView==='busfactor') renderBusFactor();
+  }
+}
+
 async function fetchRaci(){
   if(!CURRENT_TOKEN) return;
   try{
@@ -3626,6 +3675,7 @@ async function fetchRaci(){
       if(IS_EDITOR) pushRaci();
     }
   }catch(e){}
+  scheduleReconcile();
 }
 async function pushRaci(){
   if(!IS_EDITOR||!CURRENT_TOKEN) return;
@@ -3755,6 +3805,7 @@ async function fetchBusFactor(){
       if(IS_EDITOR) pushBusFactor();
     }
   }catch(e){}
+  scheduleReconcile();
 }
 async function pushBusFactor(){
   if(!IS_EDITOR||!CURRENT_TOKEN) return;
