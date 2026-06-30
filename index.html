@@ -3036,15 +3036,20 @@ function injectGhostRoles(){
     if(!JOB_ACTIVE_STATUSES.includes(jb.status)) return;
     let mgr=jb.owner;
     if(mgr&&mgr.startsWith('__role__')){ mgr=null; jb.owner=''; }
-    if(!mgr||!tree[mgr]) return;
+    const hasValidMgr=mgr&&tree[mgr];
+    if(!hasValidMgr){
+      // No valid manager — render at root level so the card is still visible
+      mgr=null;
+    }
     const openings=Math.max(1,parseInt(jb.headcount,10)||1);
     for(let i=0;i<openings;i++){
       const gid='__role__'+jb.id+(openings>1?('#'+i):'');
       const pos='Open Role'+(openings>1?' ('+(i+1)+' of '+openings+')':'')+(jb.status&&jb.status!=='Open'?' · '+jb.status:'');
       tree[gid]={email:gid,name:jb.title,position:pos,
-        dept:jb.dept||tree[mgr].dept,color:'#a855f7',isGhost:true,roleId:jb.id,
+        dept:jb.dept||(hasValidMgr?tree[mgr].dept:''),color:'#a855f7',isGhost:true,roleId:jb.id,
         children:[],parent:mgr,badgeLabel:'OPEN',badgeFg:'#fff',badgeBg:'#a855f7'};
-      tree[mgr].children.push(gid);
+      if(hasValidMgr) tree[mgr].children.push(gid);
+      else roots.push(gid);
     }
   });
 }
@@ -3436,7 +3441,7 @@ const RACI_SEED_DOMAINS=[
 {id:'data',name:'Data Science & Analytics',cat:'Engineering',r:['marciohiroyuki@gmail.com'],a:['madzunkov@gmail.com'],c:['steve.bendes@added.local','ggill@bigvikinggames.com'],i:['albert@bigvikinggames.com','jfurtado@bigvikinggames.com'],gap:'Sole data engineer (bus factor #2). Head of Data Science role open.',notes:'Snowflake, analytics, revenue pipelines. Directly impacts M&A diligence.'},
 {id:'ai',name:'AI / Creative AI',cat:'Engineering',r:['madzunkov@gmail.com'],a:['albert@bigvikinggames.com'],c:['jfurtado@bigvikinggames.com','steve.bendes@added.local'],i:[],gap:null,notes:'VP Creative AI leads AI strategy. 2 Full Stack AI roles being hired.'},
 {id:'art',name:'Art & Animation',cat:'Creative',r:['dochoa@bigvikinggames.com'],a:['davidtheron@gmail.com'],c:['dbernal@bigvikinggames.com','jordynleighc@gmail.com'],i:['jfurtado@bigvikinggames.com'],gap:null,notes:'Largest dept (~20). Deep hierarchy. David Theron is Director; Daniel Ochoa is Art Director.'},
-{id:'prod',name:'Production / PMO',cat:'Operations',r:['mwells@bigvikinggames.com'],a:['jfurtado@bigvikinggames.com'],c:['davidtheron@gmail.com','crush@bigvikinggames.com'],i:['albert@bigvikinggames.com'],gap:'Mike Wells under review — replacement being planned',notes:'Assoc. Director PMO. Manages QA, Player Support, Community. Jordyn Campbell is Art Producer.'},
+{id:'prod',name:'Production / PMO',cat:'Operations',r:['mwells@bigvikinggames.com'],a:['jfurtado@bigvikinggames.com'],c:['davidtheron@gmail.com','crush@bigvikinggames.com'],i:['albert@bigvikinggames.com'],gap:null,notes:'Assoc. Director PMO. Manages QA, Player Support, Community. Jordyn Campbell is Art Producer.'},
 {id:'product',name:'Product Management',cat:'Product',r:['steve.bendes@added.local'],a:['albert@bigvikinggames.com'],c:['tyler.greenberg@outlook.com','kyle.defoe@added.local','ccoulthard@bigvikinggames.com'],i:['jfurtado@bigvikinggames.com'],gap:'Lead PM (Games) role open',notes:'Steve is VP Product (part-time). Tyler G is Sr PM, Kyle is Technical PM, Chris is Jr PM.'},
 {id:'content',name:'Content Design',cat:'Product',r:['tmcmurdo@bigvikinggames.com'],a:['steve.bendes@added.local'],c:['nogaki@bigvikinggames.com','michael.r.bosak@gmail.com'],i:['jfurtado@bigvikinggames.com'],gap:null,notes:'Tyler McMurdo manages content team. Nicki Ogaki is PM for content.'},
 {id:'visual',name:'Visual Design',cat:'Creative',r:['jnatasha@bigvikinggames.com'],a:['steve.bendes@added.local'],c:['davidtheron@gmail.com'],i:['jfurtado@bigvikinggames.com'],gap:'Sole visual designer — no backup',notes:'Jessica Natasha is the only visual designer. Single point of failure.'},
@@ -3448,7 +3453,7 @@ const RACI_SEED_DOMAINS=[
 {id:'recruit',name:'Recruitment',cat:'Corporate',r:['jasonfraser.to@gmail.com'],a:['jfurtado@bigvikinggames.com'],c:[],i:['albert@bigvikinggames.com','rslager@bigvikinggames.com'],gap:'Contractor-only — plan to restructure under incoming HR leader',notes:'Jason Fraser is sole recruiter (contractor). 8+ open reqs. LinkedIn Hiring Assistant being evaluated.'},
 {id:'marketing',name:'Live Content Marketing',cat:'Product',r:['niko.stamatakos@gmail.com','redwards@bigvikinggames.com'],a:['steve.bendes@added.local'],c:['awalsh@bigvikinggames.com'],i:['jfurtado@bigvikinggames.com'],gap:'Contractor-only — no full-time marketing staff',notes:'Niko and Royel are both contractors. No marketing leadership.'},
 {id:'bizops',name:'General Business Operations & Strategy',cat:'Corporate',r:['ggill@bigvikinggames.com'],a:['albert@bigvikinggames.com'],c:['jfurtado@bigvikinggames.com'],i:[],gap:'Contractor-only (GK). Executive Business Partner role open.',notes:'GK is VP Strategy & Biz Ops (contractor). M&A, corporate dev, strategic planning.'},
-{id:'liveops',name:'Live Operations (All Games)',cat:'Operations',r:['mwells@bigvikinggames.com'],a:['jfurtado@bigvikinggames.com'],c:['crush@bigvikinggames.com','ama@bigvikinggames.com','awalsh@bigvikinggames.com'],i:['albert@bigvikinggames.com','steve.bendes@added.local'],gap:'PMO under review — succession planning needed',notes:'Michael Wells oversees QA, Player Support, and Community as PMO lead. Replacement planning underway.'},
+{id:'liveops',name:'Live Operations (All Games)',cat:'Operations',r:['mwells@bigvikinggames.com'],a:['jfurtado@bigvikinggames.com'],c:['crush@bigvikinggames.com','ama@bigvikinggames.com','awalsh@bigvikinggames.com'],i:['albert@bigvikinggames.com','steve.bendes@added.local'],gap:null,notes:'Michael Wells oversees QA, Player Support, and Community as PMO lead.'},
 {id:'coo-ops',name:'Corporate Operations & Cross-Functional',cat:'Leadership',r:['jfurtado@bigvikinggames.com'],a:['albert@bigvikinggames.com'],c:['steve.bendes@added.local','ggill@bigvikinggames.com','rslager@bigvikinggames.com'],i:[],gap:null,notes:'COO owns day-to-day operations, HR oversight, Finance oversight, Production oversight. Key coordination role.'}
 ];
 
@@ -3831,7 +3836,7 @@ const BF_SEED=[
 {rank:18,email:'jfurtado@bigvikinggames.com',role:'Chief Operating Officer',team:'Executive',risk:'high',sole:'COO overseeing all operations: Finance, HR, Production, Art & Production. Direct reports: David Theron, Michael Wells, Ryan Slager, Jason Fraser, HR TBD.',impact:'Operational leadership across the entire company stops. Finance, HR, production, and cross-functional coordination all depend on Jeffrey.',mitigation:'Document operational processes. Albert and Steve Bendes can cover some executive decisions. Ryan Slager covers finance.',backup:'Albert Lai (CEO, partial), Steve Bendes (VP Product, partial)',status:'Monitor'},
 {rank:19,email:'steve.bendes@added.local',role:'VP Product',team:'Executive / Product',risk:'high',sole:'VP Product (part-time). Accountable for Product, Content, Visual Design, Marketing. Tyler Greenberg and Kyle Defoe report in.',impact:'Product strategy and roadmap loses direction. Part-time engagement increases risk — no full-time product leadership.',mitigation:'Tyler Greenberg (Sr PM) could interim lead product. Kyle Defoe covers technical product. Consider full-time VP Product.',backup:'Tyler Greenberg (Sr PM), Kyle Defoe (Technical PM)',status:'Monitor'},
 {rank:20,email:'davidtheron@gmail.com',role:'Director of Art & Production',team:'Art/Animation',risk:'medium',sole:'Director overseeing Art (~20 people) and Production. Daniel Ochoa reports to David.',impact:'Largest department loses strategic direction. Ochoa could handle day-to-day art but production coordination would suffer.',mitigation:'Daniel Ochoa can step up for art direction. Jordyn Campbell covers art production.',backup:'Daniel Ochoa (Art Director), Jordyn Campbell (Art Producer)',status:'Covered'},
-{rank:21,email:'mwells@bigvikinggames.com',role:'Associate Director, PMO',team:'Production',risk:'medium',sole:'PMO lead managing QA, Player Support, and Community. Under review — replacement being planned.',impact:'QA, player support, and community operations lose oversight and coordination.',mitigation:'Direct reports (Caitlin Rush, Adam Ma, Andrew Walsh) are capable leads. Replacement planning underway.',backup:'Caitlin Rush (QA), Adam Ma (PS), Andrew Walsh (Community)',status:'Under review'},
+{rank:21,email:'mwells@bigvikinggames.com',role:'Associate Director, PMO',team:'Production',risk:'medium',sole:'PMO lead managing QA, Player Support, and Community.',impact:'QA, player support, and community operations lose oversight and coordination.',mitigation:'Direct reports (Caitlin Rush, Adam Ma, Andrew Walsh) are capable leads.',backup:'Caitlin Rush (QA), Adam Ma (PS), Andrew Walsh (Community)',status:'Monitor'},
 {rank:22,email:'dbernal@bigvikinggames.com',role:'Lead 2D Artist/Animator',team:'Art/Animation',risk:'low',sole:'Leads 2D artist team under Ochoa. Manages several contract artists.',impact:'2D art team loses day-to-day lead. Multiple seniors (Sean Worsham, Marjorie Seminio) provide depth.',mitigation:'Sean Worsham (Senior) can step up. Team has redundant coverage.',backup:'Sean Worsham (Senior 2D), Marjorie Seminio (Senior 2D)',status:'Covered'},
 {rank:23,email:'tyler.greenberg@outlook.com',role:'Senior Product Manager',team:'Product',risk:'medium',sole:'Senior PM reporting to Steve Bendes. Key product decision-maker for game features.',impact:'Game feature planning and prioritization would lose senior PM leadership.',mitigation:'Kyle Defoe (Technical PM) can cover. Chris Coulthard (Jr PM) provides support.',backup:'Kyle Defoe (Technical PM), Chris Coulthard (Jr PM)',status:'Monitor'},
 {rank:24,email:'kyle.defoe@added.local',role:'Technical Product Manager',team:'Product',risk:'low',sole:'Technical PM. Works closely with engineering on feasibility and specs.',impact:'Technical product bridge between product and engineering weakens.',mitigation:'Tyler Greenberg can absorb. Engineering managers provide direct input.',backup:'Tyler Greenberg (Sr PM)',status:'Covered'},
