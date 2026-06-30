@@ -2990,6 +2990,7 @@ async function fetchJobs(){
     if(currentView==='jobs') renderJobs();
     if(currentView==='org'&&!_pushPending&&!_pushQueued){ initTree(); render(); }
   }catch(e){ if(currentView==='jobs') renderJobs(); }
+  scheduleReconcile();
 }
 async function pushJobs(){
   if(!IS_JOBS_EDITOR||!CURRENT_TOKEN) return;
@@ -3618,36 +3619,133 @@ function scheduleReconcile(){
 }
 function reconcileRaciBf(){
   if(!IS_EDITOR||!RACI_LOADED||!BF_LOADED||!STATE_LOADED) return;
-  var domains=RACI_DOMAINS.length?RACI_DOMAINS:RACI_SEED_DOMAINS;
-  var processes=RACI_PROCESSES.length?RACI_PROCESSES:RACI_SEED_PROCESSES;
-  var bfEntries=BF_ENTRIES.length?BF_ENTRIES:BF_SEED;
+  var domains=RACI_DOMAINS.length?RACI_DOMAINS:JSON.parse(JSON.stringify(RACI_SEED_DOMAINS));
+  var processes=RACI_PROCESSES.length?RACI_PROCESSES:JSON.parse(JSON.stringify(RACI_SEED_PROCESSES));
+  var bfEntries=BF_ENTRIES.length?BF_ENTRIES:JSON.parse(JSON.stringify(BF_SEED));
   var raciChanged=false, bfChanged=false;
-  var filledJobs=JOBS.filter(function(j){ return j.status==='Filled'; });
+
+  // Build lookup: for each TBD placeholder employee, find the real hire who took their role
+  // A TBD placeholder has email ending in @added.local and name containing "TBD"
+  var tbdToReal={};
   EMPLOYEES.forEach(function(emp){
-    var title=emp.position||'';
-    if(!title||title==='—') return;
-    var tLow=title.toLowerCase().split(/[,\/]/)[0].trim();
-    [domains,processes].forEach(function(list){
-      list.forEach(function(item){
-        if(!item.gap) return;
-        var gapLow=item.gap.toLowerCase();
-        if(gapLow.indexOf(tLow)===-1 && gapLow.indexOf('tbd')===-1) return;
-        var matchesRole=gapLow.indexOf(tLow)!==-1;
-        var hasTbd=(item.a==='tbd@added.local'||item.a==='TBD');
-        if(matchesRole && hasTbd){
-          item.a=emp.email; item.gap=null; raciChanged=true;
-        }
+    if(emp.email&&emp.email.endsWith('@added.local')&&emp.name&&emp.name.indexOf('TBD')!==-1){
+      // This is a TBD placeholder — check if there's a filled job matching this role
+      // and a real employee hired for it
+      var filled=JOBS.filter(function(j){ return j.status==='Filled'; });
+      filled.forEach(function(j){
+        // Find real employee hired for this job (same title, same manager)
+        var hire=EMPLOYEES.find(function(e){
+          return e.email!==emp.email && !e.email.endsWith('@added.local') &&
+                 e.reports_to===emp.reports_to && e.dept===emp.dept;
+        });
+        if(hire) tbdToReal[emp.email]=hire.email;
       });
-    });
-    bfEntries.forEach(function(b){
-      if(!b.backup) return;
-      var bLow=b.backup.toLowerCase();
-      if(bLow.indexOf('tbd')!==-1 && bLow.indexOf(tLow)!==-1){
-        b.backup=b.backup.replace(/[^,;]*tbd[^,;]*/gi, emp.name+' (hired)');
-        bfChanged=true;
+    }
+  });
+
+  // Also build keyword sets for each employee for flexible matching
+  function extractKeywords(text){
+    if(!text) return [];
+    return text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(function(w){ return w.length>2; });
+  }
+  var empByKeyword={};
+  EMPLOYEES.forEach(function(emp){
+    if(emp.email.endsWith('@added.local')&&emp.name&&emp.name.indexOf('TBD')!==-1) return;
+    var kws=extractKeywords(emp.position).concat(extractKeywords(emp.name));
+    kws.forEach(function(k){ if(!empByKeyword[k]) empByKeyword[k]=[]; empByKeyword[k].push(emp); });
+  });
+
+  // For each RACI entry with a gap, try to resolve it
+  [domains,processes].forEach(function(list){
+    list.forEach(function(item){
+      if(!item.gap) return;
+      var hasTbd=(item.a==='tbd@added.local'||item.a==='TBD'||(item.a&&item.a.endsWith('@added.local')));
+
+      // Strategy 1: direct TBD-to-real mapping
+      if(hasTbd && tbdToReal[item.a]){
+        item.a=tbdToReal[item.a]; item.gap=null; raciChanged=true; return;
+      }
+
+      // Strategy 2: check if the gap references a role that has a filled job
+      var gapLow=item.gap.toLowerCase();
+      var filledJobs=JOBS.filter(function(j){ return j.status==='Filled'; });
+      for(var fi=0;fi<filledJobs.length;fi++){
+        var jt=filledJobs[fi].title.toLowerCase();
+        var jtParts=jt.split(/[,\/&]+/).map(function(s){return s.trim()});
+        var matched=jtParts.some(function(part){
+          var words=part.split(/\s+/).filter(function(w){return w.length>2});
+          return words.length>0 && words.every(function(w){ return gapLow.indexOf(w)!==-1; });
+        });
+        if(matched){
+          // Find the employee hired for this job
+          var hire=EMPLOYEES.find(function(e){
+            return e.reports_to===filledJobs[fi].owner && !e.email.endsWith('@added.local') &&
+                   e.position&&e.position.toLowerCase().indexOf(jtParts[0])!==-1;
+          });
+          if(hire&&hasTbd){ item.a=hire.email; item.gap=null; raciChanged=true; }
+          else if(hasTbd){ item.gap=item.gap.replace(/TBD/gi,'Filled').replace(/no accountable owner/gi,'hire in progress'); raciChanged=true; }
+          break;
+        }
+      }
+
+      // Strategy 3: gap mentions "CTO" — check if any employee has CTO-like title
+      if(item.gap && gapLow.indexOf('cto')!==-1){
+        var ctoEmp=EMPLOYEES.find(function(e){
+          var p=(e.position||'').toLowerCase();
+          return (p.indexOf('cto')!==-1||p.indexOf('chief technology')!==-1||p.indexOf('vp engineer')!==-1)
+                 && !(e.name&&e.name.indexOf('TBD')!==-1);
+        });
+        if(ctoEmp&&hasTbd){ item.a=ctoEmp.email; item.gap=null; raciChanged=true; }
+        else {
+          var ctoJob=JOBS.find(function(j){ return j.status==='Filled'&&j.title.toLowerCase().indexOf('cto')!==-1; });
+          if(ctoJob){
+            item.gap=item.gap.replace(/TBD/gi,'Filled').replace(/no accountable owner/gi,'hire in progress');
+            raciChanged=true;
+          }
+        }
       }
     });
   });
+
+  // Update R/C/I arrays: replace any TBD placeholder emails with real hires
+  Object.keys(tbdToReal).forEach(function(tbdEmail){
+    var realEmail=tbdToReal[tbdEmail];
+    [domains,processes].forEach(function(list){
+      list.forEach(function(item){
+        ['r','c','i'].forEach(function(field){
+          if(Array.isArray(item[field])){
+            var idx=item[field].indexOf(tbdEmail);
+            if(idx!==-1){ item[field][idx]=realEmail; raciChanged=true; }
+          }
+        });
+      });
+    });
+  });
+
+  // Bus factor: update TBD references in backup/status/notes
+  var filledJobs=JOBS.filter(function(j){ return j.status==='Filled'; });
+  bfEntries.forEach(function(b){
+    if(!b.backup&&!b.status) return;
+    filledJobs.forEach(function(j){
+      var jtParts=j.title.toLowerCase().split(/[,\/&]+/).map(function(s){return s.trim()});
+      var firstPart=jtParts[0];
+      if(b.backup){
+        var bLow=b.backup.toLowerCase();
+        if(bLow.indexOf('tbd')!==-1 && (bLow.indexOf(firstPart)!==-1||bLow.indexOf('cto')!==-1)){
+          b.backup=b.backup.replace(/[^,;]*[Tt][Bb][Dd][^,;]*/g, j.title+' (filled)');
+          bfChanged=true;
+        }
+      }
+      if(b.status){
+        var sLow=b.status.toLowerCase();
+        if(sLow.indexOf('tbd')!==-1 && (sLow.indexOf(firstPart)!==-1||sLow.indexOf('cto')!==-1)){
+          b.status=b.status.replace(/TBD/gi, j.title+' filled');
+          bfChanged=true;
+        }
+      }
+    });
+  });
+
   if(raciChanged){
     RACI_DOMAINS=domains; RACI_PROCESSES=processes;
     pushRaci();
