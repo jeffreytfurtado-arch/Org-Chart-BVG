@@ -1726,7 +1726,8 @@ function buildGhostCard(n){
     if(_jb&&_jb.comp&&!(ADMIN_CONFIG&&ADMIN_CONFIG.features&&ADMIN_CONFIG.features.comp===false)) inner+='<div style="margin-top:4px;font-size:11px;font-weight:700;color:#15803d">'+escHtml(_jb.comp)+'</div>'; }
   inner+='<div class="ccount" style="color:#a855f7;font-weight:600">Click to view role &rarr;</div>';
   el.innerHTML=inner;
-  el.addEventListener('click',()=>{ setView('jobs'); setTimeout(()=>openJobModal(n.roleId),60); });
+  el.addEventListener('click',e=>{ if(dragMoved)return; setView('jobs'); setTimeout(()=>openJobModal(n.roleId),60); });
+  el.addEventListener('mousedown',e=>{ if(e.button!==0)return; startDrag(n.email,e); });
   cardsEl.appendChild(el);
 }
 
