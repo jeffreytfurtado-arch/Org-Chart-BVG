@@ -1833,11 +1833,15 @@ function reassign(email,np){
   if(op) op.children=op.children.filter(c=>c!==email); else roots=roots.filter(r=>r!==email);
   npar.children.push(email); npar.children.sort((a,b)=>tree[a].name.localeCompare(tree[b].name));
   n.parent=np;
-  const emp=EMPLOYEES.find(e=>e.email===email);
-  console.log('[REASSIGN]',email,'->',np,'emp found?',!!emp,'EMPLOYEES.length=',EMPLOYEES.length);
-  if(emp) emp.reports_to=np;
+  if(n.isGhost&&n.roleId){
+    const jb=JOBS.find(j=>j.id===n.roleId);
+    if(jb){ jb.owner=np; jb.updatedAt=new Date().toISOString(); pushJobs(); }
+  } else {
+    const emp=EMPLOYEES.find(e=>e.email===email);
+    if(emp) emp.reports_to=np;
+    saveState();
+  }
   changes.push({email,name:n.name,fromName:op?op.name:'(no manager)',toName:npar.name});
-  saveState();
   render(); showToast(n.name+' now reports to '+npar.name);
 }
 
