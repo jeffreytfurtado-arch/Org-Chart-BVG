@@ -3751,6 +3751,33 @@ function reconcileRaciBf(){
     });
   });
 
+  // Clear gaps that reference active employees by name (e.g. "Mike Wells under review")
+  var empNames=EMPLOYEES.filter(function(e){return !isTbdPlaceholder(e)}).map(function(e){return e.name.toLowerCase()});
+  [domains,processes].forEach(function(list){
+    list.forEach(function(item){
+      if(!item.gap) return;
+      var gapLow=item.gap.toLowerCase();
+      var mentionsActive=empNames.some(function(n){ return gapLow.indexOf(n)!==-1; });
+      if(mentionsActive && gapLow.indexOf('tbd')===-1 && gapLow.indexOf('departed')===-1){
+        console.log('[Reconcile] Clearing stale gap for',item.id,':',item.gap);
+        item.gap=null; raciChanged=true;
+      }
+    });
+  });
+  // Clear stale bus factor statuses referencing active employees
+  bfEntries.forEach(function(b){
+    if(!b.sole) return;
+    var soleLow=b.sole.toLowerCase();
+    if(soleLow.indexOf('under review')!==-1||soleLow.indexOf('replacement being planned')!==-1){
+      var emp=EMPLOYEES.find(function(e){ return e.email===b.email && !isTbdPlaceholder(e); });
+      if(emp){
+        b.sole=b.sole.replace(/\.\s*Under review.*$/i,'.').replace(/\.\s*[Rr]eplacement being planned.*$/i,'.');
+        if(b.status==='Under review') b.status='Monitor';
+        bfChanged=true;
+      }
+    }
+  });
+
   if(raciChanged){
     RACI_DOMAINS=domains; RACI_PROCESSES=processes;
     pushRaci();
