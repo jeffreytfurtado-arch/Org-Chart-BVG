@@ -3792,6 +3792,47 @@ function reconcileRaciBf(){
     if(b.status==='Under review'){ b.status='Monitor'; bfChanged=true; }
   });
 
+  // Remove departed employees from bus factor (not in active EMPLOYEES list)
+  var activeEmails={};
+  EMPLOYEES.forEach(function(e){ if(!isTbdPlaceholder(e)) activeEmails[e.email]=e; });
+  var beforeLen=bfEntries.length;
+  bfEntries=bfEntries.filter(function(b){ return !!activeEmails[b.email]; });
+  if(bfEntries.length!==beforeLen){ bfChanged=true; console.log('[Reconcile] Removed',beforeLen-bfEntries.length,'departed employees from bus factor'); }
+
+  // Auto-add missing active employees to bus factor
+  var bfEmails={};
+  bfEntries.forEach(function(b){ bfEmails[b.email]=true; });
+  var tree={};
+  EMPLOYEES.forEach(function(e){ tree[e.email]=e; });
+  var maxRank=0;
+  bfEntries.forEach(function(b){ if(b.rank>maxRank) maxRank=b.rank; });
+  EMPLOYEES.forEach(function(emp){
+    if(isTbdPlaceholder(emp)) return;
+    if(bfEmails[emp.email]) return;
+    maxRank++;
+    var mgr=emp.reports_to&&tree[emp.reports_to]?tree[emp.reports_to]:null;
+    var directReports=EMPLOYEES.filter(function(e){ return e.reports_to===emp.email; });
+    var teamCount=directReports.length;
+    var risk=teamCount>=3?'medium':'low';
+    var pos=emp.position||emp.name;
+    var dept=emp.dept||'General';
+    var sole=teamCount>0?pos+' managing '+teamCount+' direct reports.':pos+'.';
+    var impact=teamCount>0?dept+' team loses leadership and coordination.':'Team loses a contributor. Workload redistributed.';
+    var backup=mgr?mgr.name+' (manager)':'—';
+    if(directReports.length){
+      var drNames=directReports.slice(0,3).map(function(r){return r.name});
+      backup=drNames.join(', ')+(directReports.length>3?' +more':'');
+    }
+    bfEntries.push({
+      rank:maxRank,email:emp.email,role:pos,team:dept,risk:risk,
+      sole:sole,impact:impact,
+      mitigation:'Document processes and cross-train team members.',
+      backup:backup,status:'Auto-generated — needs review'
+    });
+    bfChanged=true;
+  });
+  if(bfChanged) console.log('[Reconcile] Bus factor now has',bfEntries.length,'entries for',EMPLOYEES.filter(function(e){return !isTbdPlaceholder(e)}).length,'active employees');
+
   if(raciChanged){
     RACI_DOMAINS=domains; RACI_PROCESSES=processes;
     pushRaci();
