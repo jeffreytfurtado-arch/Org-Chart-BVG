@@ -3645,7 +3645,8 @@ function scheduleReconcile(){
   _reconcileTimer=setTimeout(reconcileRaciBf, 800);
 }
 function reconcileRaciBf(){
-  if(!IS_EDITOR||!RACI_LOADED||!BF_LOADED||!STATE_LOADED) return;
+  if(!IS_EDITOR||!RACI_LOADED||!BF_LOADED||!STATE_LOADED||!JOBS_LOADED) return;
+  console.log('[Reconcile] Running. EMPLOYEES:',EMPLOYEES.length,'JOBS filled:',JOBS.filter(j=>j.status==='Filled').length);
   var domains=RACI_DOMAINS.length?RACI_DOMAINS:JSON.parse(JSON.stringify(RACI_SEED_DOMAINS));
   var processes=RACI_PROCESSES.length?RACI_PROCESSES:JSON.parse(JSON.stringify(RACI_SEED_PROCESSES));
   var bfEntries=BF_ENTRIES.length?BF_ENTRIES:JSON.parse(JSON.stringify(BF_SEED));
@@ -3692,6 +3693,7 @@ function reconcileRaciBf(){
       // Strategy 2: check if the gap references a role that has a filled job
       var gapLow=item.gap.toLowerCase();
       var filledJobs=JOBS.filter(function(j){ return j.status==='Filled'; });
+      console.log('[Reconcile] Item',item.id,'gap:',item.gap,'a:',item.a,'filledJobs:',filledJobs.length);
       for(var fi=0;fi<filledJobs.length;fi++){
         var jt=filledJobs[fi].title.toLowerCase();
         var jtParts=jt.split(/[,\/&]+/).map(function(s){return s.trim()});
@@ -3699,12 +3701,13 @@ function reconcileRaciBf(){
           var words=part.split(/\s+/).filter(function(w){return w.length>2});
           return words.length>0 && words.every(function(w){ return gapLow.indexOf(w)!==-1; });
         });
+        console.log('[Reconcile]   vs job',filledJobs[fi].title,'matched:',matched,'owner:',filledJobs[fi].owner);
         if(matched){
-          // Find the employee hired for this job
           var hire=EMPLOYEES.find(function(e){
-            return e.reports_to===filledJobs[fi].owner && !e.email.endsWith('@added.local') &&
+            return e.reports_to===filledJobs[fi].owner &&
                    e.position&&e.position.toLowerCase().indexOf(jtParts[0])!==-1;
           });
+          console.log('[Reconcile]   hire found:',hire?hire.name+' '+hire.email:'NONE','hasTbd:',hasTbd);
           if(hire&&hasTbd){ item.a=hire.email; item.gap=null; raciChanged=true; }
           else if(hasTbd){ item.gap=item.gap.replace(/TBD/gi,'Filled').replace(/no accountable owner/gi,'hire in progress'); raciChanged=true; }
           break;
