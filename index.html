@@ -3755,27 +3755,41 @@ function reconcileRaciBf(){
   var empNames=EMPLOYEES.filter(function(e){return !isTbdPlaceholder(e)}).map(function(e){return e.name.toLowerCase()});
   [domains,processes].forEach(function(list){
     list.forEach(function(item){
-      if(!item.gap) return;
-      var gapLow=item.gap.toLowerCase();
-      var mentionsActive=empNames.some(function(n){ return gapLow.indexOf(n)!==-1; });
-      if(mentionsActive && gapLow.indexOf('tbd')===-1 && gapLow.indexOf('departed')===-1){
-        console.log('[Reconcile] Clearing stale gap for',item.id,':',item.gap);
-        item.gap=null; raciChanged=true;
+      if(item.gap){
+        var gapLow=item.gap.toLowerCase();
+        var mentionsActive=empNames.some(function(n){ return gapLow.indexOf(n)!==-1; });
+        if(mentionsActive && gapLow.indexOf('tbd')===-1 && gapLow.indexOf('departed')===-1){
+          console.log('[Reconcile] Clearing stale gap for',item.id,':',item.gap);
+          item.gap=null; raciChanged=true;
+        }
+      }
+      // Scrub "under review" / "replacement being planned" from RACI notes too
+      if(item.notes){
+        var orig=item.notes;
+        item.notes=item.notes.replace(/\.?\s*Under review[^.]*\.?/gi,'').replace(/\.?\s*[Rr]eplacement being planned[^.]*\.?/gi,'').trim();
+        if(item.notes!==orig) raciChanged=true;
+      }
+      if(item.gap){
+        var origG=item.gap;
+        item.gap=item.gap.replace(/\.?\s*Under review[^.]*\.?/gi,'').replace(/\.?\s*[Rr]eplacement being planned[^.]*\.?/gi,'').trim();
+        if(!item.gap) item.gap=null;
+        if(item.gap!==origG) raciChanged=true;
       }
     });
   });
-  // Clear stale bus factor statuses referencing active employees
+  // Scrub "under review" / "replacement being planned" from ALL bus factor text fields for active employees
+  var staleRx=/\.?\s*Under review[^.]*\.?/gi;
+  var staleRx2=/\.?\s*[Rr]eplacement being planned[^.]*\.?/gi;
   bfEntries.forEach(function(b){
-    if(!b.sole) return;
-    var soleLow=b.sole.toLowerCase();
-    if(soleLow.indexOf('under review')!==-1||soleLow.indexOf('replacement being planned')!==-1){
-      var emp=EMPLOYEES.find(function(e){ return e.email===b.email && !isTbdPlaceholder(e); });
-      if(emp){
-        b.sole=b.sole.replace(/\.\s*Under review.*$/i,'.').replace(/\.\s*[Rr]eplacement being planned.*$/i,'.');
-        if(b.status==='Under review') b.status='Monitor';
-        bfChanged=true;
-      }
-    }
+    var emp=EMPLOYEES.find(function(e){ return e.email===b.email && !isTbdPlaceholder(e); });
+    if(!emp) return;
+    ['sole','impact','mitigation','backup','notes'].forEach(function(f){
+      if(!b[f]) return;
+      var orig=b[f];
+      b[f]=b[f].replace(staleRx,'').replace(staleRx2,'').trim();
+      if(b[f]!==orig) bfChanged=true;
+    });
+    if(b.status==='Under review'){ b.status='Monitor'; bfChanged=true; }
   });
 
   if(raciChanged){
