@@ -2125,6 +2125,7 @@ function submitAdd(){
   if(mgr){ let cur=mgr; while(cur){ collapsed.delete(cur); cur=tree[cur]?.parent; } }
   saveState(); render(); showToast(name+' added'+(mgr&&tree[mgr]?' under '+tree[mgr].name:''));
   closeModal();
+  syncHireToRaciBf(id, name, title);
 }
 
 // SECONDARY (dotted) LINKS — "also reports to"
@@ -2778,6 +2779,57 @@ function submitFillRole(){
   if(currentView!=='org') setView('org');
   else render();
   showToast(name+' added to org chart'+(mgr&&tree[mgr]?' under '+tree[mgr].name:''));
+  syncHireToRaciBf(id, name, job.title);
+}
+
+function syncHireToRaciBf(email, name, roleTitle){
+  if(!roleTitle) return;
+  var rt=roleTitle.toLowerCase();
+  var raciChanged=false, bfChanged=false;
+  var domains=RACI_LOADED&&RACI_DOMAINS.length?RACI_DOMAINS:JSON.parse(JSON.stringify(RACI_SEED_DOMAINS));
+  var processes=RACI_LOADED&&RACI_PROCESSES.length?RACI_PROCESSES:JSON.parse(JSON.stringify(RACI_SEED_PROCESSES));
+  [domains,processes].forEach(function(list){
+    list.forEach(function(item){
+      var gapMatch=item.gap&&item.gap.toLowerCase().indexOf(rt.split(/[,\/]/)[0].trim())!==-1;
+      var tbd=item.a==='tbd@added.local'||item.a==='TBD';
+      if(gapMatch||tbd&&item.gap&&item.gap.toLowerCase().indexOf('tbd')!==-1){
+        if(item.a==='tbd@added.local'||item.a==='TBD'){ item.a=email; raciChanged=true; }
+        if(Array.isArray(item.r)){
+          var ri=item.r.indexOf('tbd@added.local');
+          if(ri!==-1){ item.r[ri]=email; raciChanged=true; }
+        }
+        if(item.gap){ item.gap=null; raciChanged=true; }
+      }
+    });
+  });
+  if(raciChanged){
+    RACI_DOMAINS=domains; RACI_PROCESSES=processes; RACI_LOADED=true;
+    pushRaci();
+  }
+  var bfEntries=BF_LOADED&&BF_ENTRIES.length?BF_ENTRIES:JSON.parse(JSON.stringify(BF_SEED));
+  bfEntries.forEach(function(b){
+    if(b.backup&&b.backup.toLowerCase().indexOf('tbd')!==-1){
+      var parts=b.backup.split(/[,;]/);
+      parts=parts.map(function(p){
+        if(p.toLowerCase().indexOf('tbd')!==-1) return name+' (hired)';
+        return p;
+      });
+      b.backup=parts.join(', ');
+      bfChanged=true;
+    }
+    if(b.status&&b.status.toLowerCase().indexOf('tbd')!==-1){
+      b.status=b.status.replace(/TBD/gi,name+' hired');
+      bfChanged=true;
+    }
+    if(b.notes&&b.notes.toLowerCase().indexOf('tbd')!==-1){
+      b.notes=b.notes.replace(/TBD/gi,name);
+      bfChanged=true;
+    }
+  });
+  if(bfChanged){
+    BF_ENTRIES=bfEntries; BF_LOADED=true;
+    pushBusFactor();
+  }
 }
 
 function jobsExportRows(){
@@ -3971,7 +4023,21 @@ function executeOffboard(){
     pushJobs();
   }
 
-  // 5. Update Bus Factor — mark departed entries
+  // 5. Update RACI — flag departed person's assignments as gaps
+  var domains=RACI_LOADED&&RACI_DOMAINS.length?RACI_DOMAINS:JSON.parse(JSON.stringify(RACI_SEED_DOMAINS));
+  var processes=RACI_LOADED&&RACI_PROCESSES.length?RACI_PROCESSES:JSON.parse(JSON.stringify(RACI_SEED_PROCESSES));
+  var raciChanged=false;
+  [domains,processes].forEach(function(list){
+    list.forEach(function(item){
+      if(item.a===email){ item.a='tbd@added.local'; item.gap=(item.gap?item.gap+'; ':'')+emp.name+' departed — needs new owner'; raciChanged=true; }
+      if(Array.isArray(item.r)){ var ri=item.r.indexOf(email); if(ri!==-1){ item.r.splice(ri,1); raciChanged=true; } }
+      if(Array.isArray(item.c)){ var ci=item.c.indexOf(email); if(ci!==-1){ item.c.splice(ci,1); raciChanged=true; } }
+      if(Array.isArray(item.i)){ var ii=item.i.indexOf(email); if(ii!==-1){ item.i.splice(ii,1); raciChanged=true; } }
+    });
+  });
+  if(raciChanged){ RACI_DOMAINS=domains; RACI_PROCESSES=processes; RACI_LOADED=true; pushRaci(); }
+
+  // 6. Update Bus Factor — mark departed entries
   var bfEntries=BF_LOADED&&BF_ENTRIES.length?BF_ENTRIES:JSON.parse(JSON.stringify(BF_SEED));
   bfEntries.forEach(function(b){
     if(b.email===email){
@@ -3983,7 +4049,7 @@ function executeOffboard(){
   BF_ENTRIES=bfEntries; BF_LOADED=true;
   pushBusFactor();
 
-  // 6. Save org state and refresh
+  // 7. Save org state and refresh
   closeOffboardModal();
   saveState();
   initTree(); render();
