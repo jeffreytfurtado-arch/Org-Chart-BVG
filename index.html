@@ -3792,6 +3792,91 @@ function reconcileRaciBf(){
     if(b.status==='Under review'){ b.status='Monitor'; bfChanged=true; }
   });
 
+  // Auto-assign unassigned employees to RACI domains
+  var assignedEmails=new Set();
+  [domains,processes].forEach(function(list){
+    list.forEach(function(item){
+      ['r','a','c','i'].forEach(function(f){
+        var arr=Array.isArray(item[f])?item[f]:(item[f]?[item[f]]:[]);
+        arr.forEach(function(e){ assignedEmails.add(e); });
+      });
+    });
+  });
+  // Map dept keywords to RACI domain ids
+  var deptToDomain={
+    'engineering':['eng-yw','eng-yt','eng-fw'],
+    'developers':['eng-yw','eng-yt','eng-fw'],
+    'yoworld':['eng-yw'],'yotopia':['eng-yt'],'fishworld':['eng-fw'],
+    'devops':['devops'],'platform':['devops'],'infra':['devops'],
+    'data':['data'],'analytics':['data'],'bi':['data'],
+    'art':['visual'],'animation':['visual'],'design':['visual'],'creative':['visual'],
+    'product':['product'],'pm':['product'],
+    'qa':['qa'],'quality':['qa'],'testing':['qa'],
+    'player support':['ps'],'support':['ps'],'cs':['ps'],
+    'community':['community'],
+    'finance':['finance'],'accounting':['finance'],
+    'hr':['hr'],'people':['hr'],'culture':['hr'],
+    'recruitment':['recruit'],'recruiting':['recruit'],
+    'marketing':['marketing'],'content':['marketing'],
+    'production':['prod'],'pmo':['prod'],
+    'executive':['bizops'],'strategy':['bizops'],'operations':['liveops']
+  };
+  EMPLOYEES.forEach(function(emp){
+    if(isTbdPlaceholder(emp)) return;
+    if(emp.email.indexOf('added.local')!==-1||emp.email.indexOf('tbd@')!==-1) return;
+    if(assignedEmails.has(emp.email)) return;
+    var dept=(emp.dept||'').toLowerCase();
+    var pos=(emp.position||'').toLowerCase();
+    var matchedIds=[];
+    Object.keys(deptToDomain).forEach(function(key){
+      if(dept.indexOf(key)!==-1||pos.indexOf(key)!==-1) matchedIds=matchedIds.concat(deptToDomain[key]);
+    });
+    // Deduplicate
+    matchedIds=[...new Set(matchedIds)];
+    if(!matchedIds.length){
+      // Fallback: find domain where their manager is assigned
+      if(emp.reports_to){
+        [domains,processes].forEach(function(list){
+          list.forEach(function(item){
+            ['r','a'].forEach(function(f){
+              var arr=Array.isArray(item[f])?item[f]:(item[f]?[item[f]]:[]);
+              if(arr.indexOf(emp.reports_to)!==-1 && matchedIds.indexOf(item.id)===-1) matchedIds.push(item.id);
+            });
+          });
+        });
+      }
+    }
+    if(!matchedIds.length) return;
+    // Add employee to 'i' (Informed) on matched domains
+    matchedIds.forEach(function(did){
+      var found=null;
+      [domains,processes].forEach(function(list){
+        list.forEach(function(item){ if(item.id===did) found=item; });
+      });
+      if(!found) return;
+      if(!Array.isArray(found.i)) found.i=found.i?[found.i]:[];
+      if(found.i.indexOf(emp.email)===-1){
+        found.i.push(emp.email);
+        raciChanged=true;
+      }
+    });
+    console.log('[Reconcile] Auto-assigned',emp.name,'to RACI domains:',matchedIds.join(', '));
+  });
+
+  // Remove departed/stale emails from RACI R/C/I arrays
+  var activeEmailSet=new Set();
+  EMPLOYEES.forEach(function(e){ if(!isTbdPlaceholder(e)) activeEmailSet.add(e.email); });
+  [domains,processes].forEach(function(list){
+    list.forEach(function(item){
+      ['r','c','i'].forEach(function(f){
+        if(!Array.isArray(item[f])) return;
+        var before=item[f].length;
+        item[f]=item[f].filter(function(email){ return activeEmailSet.has(email); });
+        if(item[f].length!==before) raciChanged=true;
+      });
+    });
+  });
+
   // Remove departed employees from bus factor (not in active EMPLOYEES list)
   var activeEmails={};
   EMPLOYEES.forEach(function(e){ if(!isTbdPlaceholder(e)) activeEmails[e.email]=e; });
