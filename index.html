@@ -1680,30 +1680,10 @@ function buildCard(n){
   inner += '<a class="clinkedin" href="'+li+'" target="_blank" rel="noopener noreferrer" title="Open '+escAttr(n.name)+' on LinkedIn">in</a>';
   inner += '<div class="chead"><div class="cavatar" style="background:'+n.color+'">'+av+'</div><div class="chead-txt"><div class="cname">'+n.name+'</div><div class="ctitle">'+n.position+'</div></div></div>';
   inner += '<div class="cdept" style="color:'+n.color+'">'+n.dept+'</div>';
-  { const emp=EMPLOYEES.find(e=>e.email===n.email);
-    if(emp&&emp.location) inner += '<div class="ctenure" title="Location">&#128205; '+emp.location+'</div>';
-  }
   { const _t=tenureStr(n); if(_t) inner += '<div class="ctenure" title="Started '+hireOf(n)+'">&#9201; '+_t+' at BVG</div>'; }
   { const emp=EMPLOYEES.find(e=>e.email===n.email);
     const compVal=emp&&emp.comp?emp.comp:COMP_DATA[n.email];
     if(COMP_OK && compVal) inner += '<div class="ccomp">$'+Number(compVal).toLocaleString()+'/yr</div>';
-  }
-  { const emp=EMPLOYEES.find(e=>e.email===n.email);
-    if(emp&&emp.notes) inner += '<div class="ctenure" style="color:#6366f1" title="Note">&#128221; '+emp.notes+'</div>';
-  }
-  { // RACI badge
-    const domains=RACI_LOADED&&RACI_DOMAINS.length?RACI_DOMAINS:RACI_SEED_DOMAINS;
-    const processes=RACI_LOADED&&RACI_PROCESSES.length?RACI_PROCESSES:RACI_SEED_PROCESSES;
-    let ra=0,rc=0; [...domains,...processes].forEach(item=>{
-      if(item.a===n.email) ra++;
-      if(Array.isArray(item.r)&&item.r.includes(n.email)) rc++;
-    });
-    if(ra||rc) inner += '<div class="ctenure" style="color:#0369a1" title="RACI: Accountable for '+ra+', Responsible for '+rc+'">&#9744; A:'+ra+' R:'+rc+'</div>';
-  }
-  { // Bus factor badge
-    const bfList=BF_LOADED&&BF_ENTRIES.length?BF_ENTRIES:BF_SEED;
-    const bf=bfList.find(b=>b.email===n.email);
-    if(bf) inner += '<div class="ctenure" style="color:'+(bf.risk==='critical'?'#dc2626':bf.risk==='high'?'#ea580c':'#ca8a04')+'" title="Bus factor: '+bf.sole+'">&#9888; BF: '+bf.risk.toUpperCase()+'</div>';
   }
   if(externalMgr){
     inner += '<div class="cmgr-ext">&#8593; '+externalMgr+'<br><span style="font-size:9px;opacity:.7">('+externalMgrDept+')</span></div>';
