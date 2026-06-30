@@ -1812,7 +1812,8 @@ function onDM(e){
     if(dropTarget){ cardsEl.querySelector('[data-email="'+dropTarget+'"]')?.classList.remove('dok','dbad'); }
     dropTarget=nt;
     if(dropTarget){
-      const ok=dropTarget!==dragEmail&&!isAncestor(dragEmail,dropTarget)&&dropTarget!==tree[dragEmail].parent;
+      const ghostOnGhost=tree[dragEmail]&&tree[dragEmail].isGhost&&tree[dropTarget]&&tree[dropTarget].isGhost;
+      const ok=dropTarget!==dragEmail&&!isAncestor(dragEmail,dropTarget)&&dropTarget!==tree[dragEmail].parent&&!ghostOnGhost;
       tgt.classList.add(ok?'dok':'dbad');
     }
   }
@@ -1823,7 +1824,8 @@ function onDU(e){
   if(dropTarget){
     const tEl=cardsEl.querySelector('[data-email="'+dropTarget+'"]');
     tEl?.classList.remove('dok','dbad');
-    const ok=dropTarget!==dragEmail&&!isAncestor(dragEmail,dropTarget)&&dropTarget!==tree[dragEmail].parent;
+    const ghostOnGhost=tree[dragEmail]&&tree[dragEmail].isGhost&&tree[dropTarget]&&tree[dropTarget].isGhost;
+    const ok=dropTarget!==dragEmail&&!isAncestor(dragEmail,dropTarget)&&dropTarget!==tree[dragEmail].parent&&!ghostOnGhost;
     if(ok&&dragMoved) reassign(dragEmail,dropTarget);
   }
   cardsEl.querySelector('[data-email="'+dragEmail+'"]')?.classList.remove('src');
@@ -2957,7 +2959,8 @@ function injectGhostRoles(){
   JOBS.forEach(jb=>{
     if(jb.showOnChart==='no') return;
     if(!JOB_ACTIVE_STATUSES.includes(jb.status)) return;
-    const mgr=jb.owner;
+    let mgr=jb.owner;
+    if(mgr&&mgr.startsWith('__role__')){ mgr=null; jb.owner=''; }
     if(!mgr||!tree[mgr]) return;
     const openings=Math.max(1,parseInt(jb.headcount,10)||1);
     for(let i=0;i<openings;i++){
