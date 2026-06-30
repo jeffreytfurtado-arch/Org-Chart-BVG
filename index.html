@@ -2016,7 +2016,7 @@ function openEditModal(email){
   const raciRoles=[];
   raciItems.forEach(item=>{
     const roles=[];
-    if(item.a===email) roles.push('A');
+    var _av=Array.isArray(item.a)?item.a[0]||'':item.a||''; if(_av===email) roles.push('A');
     if(Array.isArray(item.r)&&item.r.includes(email)) roles.push('R');
     if(Array.isArray(item.c)&&item.c.includes(email)) roles.push('C');
     if(Array.isArray(item.i)&&item.i.includes(email)) roles.push('I');
@@ -2780,7 +2780,7 @@ function submitFillRole(){
     const oldEmail=oldTbd.email;
     [RACI_DOMAINS.length?RACI_DOMAINS:RACI_SEED_DOMAINS, RACI_PROCESSES.length?RACI_PROCESSES:RACI_SEED_PROCESSES].forEach(function(list){
       list.forEach(function(item){
-        if(item.a===oldEmail){ item.a=id; if(item.gap) item.gap=null; }
+        var _ov=Array.isArray(item.a)?item.a[0]||'':item.a||''; if(_ov===oldEmail){ if(Array.isArray(item.a)) item.a=[id]; else item.a=id; if(item.gap) item.gap=null; }
         ['r','c','i'].forEach(function(f){ if(Array.isArray(item[f])){ var ix=item[f].indexOf(oldEmail); if(ix!==-1) item[f][ix]=id; } });
       });
     });
@@ -2810,12 +2810,16 @@ function syncHireToRaciBf(email, name, roleTitle){
   var raciChanged=false, bfChanged=false;
   var domains=RACI_LOADED&&RACI_DOMAINS.length?RACI_DOMAINS:JSON.parse(JSON.stringify(RACI_SEED_DOMAINS));
   var processes=RACI_LOADED&&RACI_PROCESSES.length?RACI_PROCESSES:JSON.parse(JSON.stringify(RACI_SEED_PROCESSES));
+  function _getA(item){ return Array.isArray(item.a)?item.a[0]||'':item.a||''; }
+  function _setA(item,v){ if(Array.isArray(item.a)) item.a=[v]; else item.a=v; }
+  var rtFirst=rt.split(/[,\/]/)[0].trim();
   [domains,processes].forEach(function(list){
     list.forEach(function(item){
-      var gapMatch=item.gap&&item.gap.toLowerCase().indexOf(rt.split(/[,\/]/)[0].trim())!==-1;
-      var tbd=item.a==='tbd@added.local'||item.a==='TBD';
-      if(gapMatch||tbd&&item.gap&&item.gap.toLowerCase().indexOf('tbd')!==-1){
-        if(item.a==='tbd@added.local'||item.a==='TBD'){ item.a=email; raciChanged=true; }
+      var aVal=_getA(item);
+      var gapMatch=item.gap&&item.gap.toLowerCase().indexOf(rtFirst)!==-1;
+      var tbd=aVal==='tbd@added.local'||aVal==='TBD'||aVal.indexOf('tbd')!==-1;
+      if(gapMatch||(tbd&&item.gap&&item.gap.toLowerCase().indexOf('tbd')!==-1)){
+        if(tbd){ _setA(item,email); raciChanged=true; }
         if(Array.isArray(item.r)){
           var ri=item.r.indexOf('tbd@added.local');
           if(ri!==-1){ item.r[ri]=email; raciChanged=true; }
@@ -3655,95 +3659,68 @@ function reconcileRaciBf(){
   function isTbdPlaceholder(emp){
     return emp.name&&emp.name.indexOf('TBD')!==-1;
   }
+  // item.a can be a string or array — normalize to get/set the accountable email
+  function getA(item){ return Array.isArray(item.a)?item.a[0]||'':item.a||''; }
+  function setA(item,email){ if(Array.isArray(item.a)) item.a=[email]; else item.a=email; }
+  function aIsTbd(item){
+    var v=getA(item);
+    return v==='tbd@added.local'||v==='TBD'||v.indexOf('tbd')!==-1;
+  }
 
-  // Build lookup: for each TBD placeholder employee, find the real hire who took their role
-  var tbdToReal={};
-  EMPLOYEES.forEach(function(emp){
-    if(!isTbdPlaceholder(emp)) return;
-    // Find a non-TBD employee with the same manager and dept
-    var hire=EMPLOYEES.find(function(e){
-      return e.email!==emp.email && !isTbdPlaceholder(e) &&
-             e.reports_to===emp.reports_to && e.dept===emp.dept;
-    });
-    if(hire){ tbdToReal[emp.email]=hire.email; return; }
-    // Also check filled jobs for this role
-    JOBS.forEach(function(j){
-      if(j.status!=='Filled') return;
-      var jTitle=j.title.toLowerCase();
-      var empPos=(emp.position||'').toLowerCase();
-      if(jTitle.indexOf(empPos)===-1 && empPos.indexOf('cto')===-1 && jTitle.indexOf('cto')===-1) return;
-      var h=EMPLOYEES.find(function(e){
-        return e.email!==emp.email && !isTbdPlaceholder(e) && e.position===j.title;
-      });
-      if(h) tbdToReal[emp.email]=h.email;
-    });
-  });
+  // For each RACI entry with a gap, try to resolve it via filled jobs
+  var filledJobs=JOBS.filter(function(j){ return j.status==='Filled'; });
+  console.log('[Reconcile] filledJobs:',filledJobs.map(function(j){return j.title}));
 
-  // For each RACI entry with a gap, try to resolve it
   [domains,processes].forEach(function(list){
     list.forEach(function(item){
       if(!item.gap) return;
-      var hasTbd=(item.a==='tbd@added.local'||item.a==='TBD'||(item.a&&item.a.endsWith('@added.local')));
-
-      // Strategy 1: direct TBD-to-real mapping
-      if(hasTbd && tbdToReal[item.a]){
-        item.a=tbdToReal[item.a]; item.gap=null; raciChanged=true; return;
-      }
-
-      // Strategy 2: check if the gap references a role that has a filled job
       var gapLow=item.gap.toLowerCase();
-      var filledJobs=JOBS.filter(function(j){ return j.status==='Filled'; });
-      console.log('[Reconcile] Item',item.id,'gap:',item.gap,'a:',item.a,'filledJobs:',filledJobs.length);
+      var hasTbd=aIsTbd(item);
+      console.log('[Reconcile] Item',item.id,'gap:',item.gap,'a:',getA(item),'hasTbd:',hasTbd);
+
+      // Match gap text against filled job titles
       for(var fi=0;fi<filledJobs.length;fi++){
         var jt=filledJobs[fi].title.toLowerCase();
         var jtParts=jt.split(/[,\/&]+/).map(function(s){return s.trim()});
+        // Check if any keyword group from the job title appears in the gap
         var matched=jtParts.some(function(part){
           var words=part.split(/\s+/).filter(function(w){return w.length>2});
           return words.length>0 && words.every(function(w){ return gapLow.indexOf(w)!==-1; });
         });
-        console.log('[Reconcile]   vs job',filledJobs[fi].title,'matched:',matched,'owner:',filledJobs[fi].owner);
+        // Also match if gap mentions "cto" and job title mentions "cto"
+        if(!matched && gapLow.indexOf('cto')!==-1 && jt.indexOf('cto')!==-1) matched=true;
+        console.log('[Reconcile]   vs job "'+filledJobs[fi].title+'" matched:',matched);
         if(matched){
+          // Find the employee hired for this job
           var hire=EMPLOYEES.find(function(e){
-            return e.reports_to===filledJobs[fi].owner &&
-                   e.position&&e.position.toLowerCase().indexOf(jtParts[0])!==-1;
+            if(isTbdPlaceholder(e)) return false;
+            var pos=(e.position||'').toLowerCase();
+            return pos===jt || jtParts.some(function(p){ return pos.indexOf(p)!==-1; });
           });
-          console.log('[Reconcile]   hire found:',hire?hire.name+' '+hire.email:'NONE','hasTbd:',hasTbd);
-          if(hire&&hasTbd){ item.a=hire.email; item.gap=null; raciChanged=true; }
+          console.log('[Reconcile]   hire:',hire?hire.name+' ('+hire.email+')':'NOT FOUND');
+          if(hire&&hasTbd){ setA(item,hire.email); item.gap=null; raciChanged=true; }
+          else if(hire){ item.gap=null; raciChanged=true; }
           else if(hasTbd){ item.gap=item.gap.replace(/TBD/gi,'Filled').replace(/no accountable owner/gi,'hire in progress'); raciChanged=true; }
           break;
-        }
-      }
-
-      // Strategy 3: gap mentions "CTO" — check if any employee has CTO-like title
-      if(item.gap && gapLow.indexOf('cto')!==-1){
-        var ctoEmp=EMPLOYEES.find(function(e){
-          var p=(e.position||'').toLowerCase();
-          return (p.indexOf('cto')!==-1||p.indexOf('chief technology')!==-1||p.indexOf('vp engineer')!==-1||p.indexOf('vp engineering')!==-1)
-                 && !isTbdPlaceholder(e);
-        });
-        if(ctoEmp&&hasTbd){ item.a=ctoEmp.email; item.gap=null; raciChanged=true; }
-        else if(!ctoEmp){
-          var ctoJob=JOBS.find(function(j){ return j.status==='Filled'&&j.title.toLowerCase().indexOf('cto')!==-1; });
-          if(ctoJob){
-            // Find anyone hired for this specific job by matching position to job title
-            var ctoHire=EMPLOYEES.find(function(e){ return e.position===ctoJob.title && !isTbdPlaceholder(e); });
-            if(ctoHire&&hasTbd){ item.a=ctoHire.email; item.gap=null; raciChanged=true; }
-            else { item.gap=item.gap.replace(/TBD/gi,'Filled').replace(/no accountable owner/gi,'hire in progress'); raciChanged=true; }
-          }
         }
       }
     });
   });
 
-  // Update R/C/I arrays: replace any TBD placeholder emails with real hires
-  Object.keys(tbdToReal).forEach(function(tbdEmail){
-    var realEmail=tbdToReal[tbdEmail];
+  // Also replace tbd@added.local in R/C/I arrays if we found a matching hire
+  filledJobs.forEach(function(j){
+    var hire=EMPLOYEES.find(function(e){
+      if(isTbdPlaceholder(e)) return false;
+      return (e.position||'').toLowerCase()===j.title.toLowerCase();
+    });
+    if(!hire) return;
     [domains,processes].forEach(function(list){
       list.forEach(function(item){
+        if(getA(item)==='tbd@added.local'){ setA(item,hire.email); raciChanged=true; }
         ['r','c','i'].forEach(function(field){
           if(Array.isArray(item[field])){
-            var idx=item[field].indexOf(tbdEmail);
-            if(idx!==-1){ item[field][idx]=realEmail; raciChanged=true; }
+            var idx=item[field].indexOf('tbd@added.local');
+            if(idx!==-1){ item[field][idx]=hire.email; raciChanged=true; }
           }
         });
       });
@@ -4206,7 +4183,8 @@ function executeOffboard(){
   var raciChanged=false;
   [domains,processes].forEach(function(list){
     list.forEach(function(item){
-      if(item.a===email){ item.a='tbd@added.local'; item.gap=(item.gap?item.gap+'; ':'')+emp.name+' departed — needs new owner'; raciChanged=true; }
+      var _aVal=Array.isArray(item.a)?item.a[0]||'':item.a||'';
+      if(_aVal===email){ if(Array.isArray(item.a)) item.a=['tbd@added.local']; else item.a='tbd@added.local'; item.gap=(item.gap?item.gap+'; ':'')+emp.name+' departed — needs new owner'; raciChanged=true; }
       if(Array.isArray(item.r)){ var ri=item.r.indexOf(email); if(ri!==-1){ item.r.splice(ri,1); raciChanged=true; } }
       if(Array.isArray(item.c)){ var ci=item.c.indexOf(email); if(ci!==-1){ item.c.splice(ci,1); raciChanged=true; } }
       if(Array.isArray(item.i)){ var ii=item.i.indexOf(email); if(ii!==-1){ item.i.splice(ii,1); raciChanged=true; } }
